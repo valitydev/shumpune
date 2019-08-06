@@ -14,6 +14,14 @@ spring:
   output:
     ansi:
       enabled: always
-info:
+
+  banner:
+    image:
+      location: "shampune.png"
+      invert: true
+
+
+  info:
   version: @project.version@
   stage: dev
+
