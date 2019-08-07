@@ -24,8 +24,7 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
                 "VALUES (:curr_sym_code, :creation_time, :description) RETURNING id;";
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("curr_sym_code", prototype.getCurrencySymCode());
-        params.addValue("creation_time", (prototype.isSetCreationTime() ?
-                TypeUtil.stringToInstant(prototype.getCreationTime()) : Instant.now()), Types.OTHER);
+        params.addValue("creation_time", getInstant(prototype), Types.OTHER);
         params.addValue("description", prototype.getDescription());
         try {
             GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
@@ -37,6 +36,10 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
         } catch (NestedRuntimeException e) {
             throw new DaoException(e);
         }
+    }
+
+    private LocalDateTime getInstant(AccountPrototype prototype) {
+        return toLocalDateTime(prototype.isSetCreationTime() ? TypeUtil.stringToInstant(prototype.getCreationTime()) : Instant.now());
     }
 
     private LocalDateTime toLocalDateTime(Instant instant) {
