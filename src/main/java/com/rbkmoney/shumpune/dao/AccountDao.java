@@ -7,8 +7,6 @@ public interface AccountDao {
 
     Long insert(AccountPrototype account);
 
-    AccountPrototype getById(Long id);
-
     Account getSnapshotById(Long id, Long clock);
 
 }

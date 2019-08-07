@@ -8,12 +8,14 @@ import org.springframework.core.NestedRuntimeException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.stereotype.Service;
 
 import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+@Service
 public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements AccountDao {
 
     @Override
@@ -39,11 +41,6 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
 
     private LocalDateTime toLocalDateTime(Instant instant) {
         return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
-    }
-
-    @Override
-    public AccountPrototype getById(Long id) {
-        return null;
     }
 
     @Override
