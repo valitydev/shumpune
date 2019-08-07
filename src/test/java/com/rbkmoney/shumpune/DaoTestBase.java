@@ -5,11 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.ClassRule;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureJdbc;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -17,7 +15,6 @@ import org.testcontainers.containers.FailureDetectingExternalResource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(initializers = DaoTestBase.Initializer.class)

@@ -4,9 +4,10 @@ import com.rbkmoney.damsel.shumpune.Account;
 import com.rbkmoney.damsel.shumpune.AccountPrototype;
 import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.shumpune.exception.DaoException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.NestedRuntimeException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 @Service
-public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements AccountDao {
+@RequiredArgsConstructor
+public class AccountDaoImpl implements AccountDao {
+
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public Long insert(AccountPrototype prototype) {
@@ -28,7 +32,7 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
         params.addValue("description", prototype.getDescription());
         try {
             GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
-            int updateCount = getNamedParameterJdbcTemplate().update(sql, params, keyHolder);
+            int updateCount = jdbcTemplate.update(sql, params, keyHolder);
             if (updateCount != 1) {
                 throw new DaoException("Account creation returned unexpected update count: " + updateCount);
             }
