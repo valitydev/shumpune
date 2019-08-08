@@ -60,10 +60,13 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
     @Override
     public BalanceModel getBalanceById(Long id, Long clock) {
         if (id != null && clock != null) {
-            final String sql = "select ";
+            MapSqlParameterSource params = new MapSqlParameterSource("accId", id);
+            final String sql = "select id, own_amount, max_available_amount, min_available_amount, max(clock) " +
+                    "from shm.account_log " +
+                    "where account_id = :accId";
             try {
-                BalanceModel balanceModel = getJdbcTemplate()
-                        .queryForObject(sql, balanceRowMapper);
+                BalanceModel balanceModel = getNamedParameterJdbcTemplate()
+                        .queryForObject(sql, params, balanceRowMapper);
                 if (balanceModel != null && balanceModel.getClock() >= clock) {
                     return balanceModel;
                 }
@@ -71,6 +74,7 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
                 throw new DaoException(e);
             }
         }
+
         return null;
     }
 

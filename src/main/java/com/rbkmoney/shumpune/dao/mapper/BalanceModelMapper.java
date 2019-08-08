@@ -1,12 +1,9 @@
 package com.rbkmoney.shumpune.dao.mapper;
 
-import com.rbkmoney.damsel.shumpune.Clock;
-import com.rbkmoney.damsel.shumpune.VectorClock;
 import com.rbkmoney.shumpune.domain.BalanceModel;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
-import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -27,10 +24,6 @@ public class BalanceModelMapper implements RowMapper<BalanceModel> {
                 .minAvailableAmount(minAmount)
                 .clock(clock)
                 .build();
-    }
-
-    private Clock createVectorClock(long clock) {
-        return Clock.vector(new VectorClock(ByteBuffer.allocate(Long.SIZE).putLong(clock)));
     }
 
 }

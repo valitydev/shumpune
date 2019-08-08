@@ -2,8 +2,11 @@ package com.rbkmoney.shumpune.handler;
 
 import com.rbkmoney.damsel.shumpune.*;
 import com.rbkmoney.damsel.shumpune.base.InvalidRequest;
+import com.rbkmoney.shumpune.converter.BalanceModelToBalanceConverter;
 import com.rbkmoney.shumpune.dao.AccountDao;
+import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.exception.DaoException;
+import com.rbkmoney.shumpune.utils.VectorClockSerializer;
 import com.rbkmoney.woody.api.flow.error.WUnavailableResultException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Component;
 public class ShumpuneServiceHandler implements AccounterSrv.Iface {
 
     private final AccountDao accountDao;
+    private final BalanceModelToBalanceConverter balanceModelToBalanceConverter;
 
     @Override
     public Clock hold(PostingPlanChange postingPlanChange) throws InvalidPostingParams, InvalidRequest, TException {
@@ -43,8 +47,23 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
     }
 
     @Override
-    public Balance getBalanceByID(long l, Clock clock) throws AccountNotFound, ClockInFuture, TException {
-        return null;
+    public Balance getBalanceByID(long accountId, Clock clock) throws AccountNotFound, ClockInFuture, TException {
+        log.info("Start getBalanceByID accountId: {} clock: {}", accountId, clock);
+        try {
+            Long clockValue = null;
+            if (clock.isSetVector()) {
+                clockValue = VectorClockSerializer.deserialize(clock.getVector());
+            }
+            BalanceModel balance = accountDao.getBalanceById(accountId, clockValue);
+            log.info("Finish getBalanceByID balance: {}", balance);
+            return balanceModelToBalanceConverter.convert(balance);
+        } catch (DaoException e) {
+            log.error("Failed to getBalanceByID e: ", e);
+            throw new WUnavailableResultException(e);
+        } catch (Exception e) {
+            log.error("Failed to getBalanceByID e: ", e);
+            throw new TException(e);
+        }
     }
 
     @Override
