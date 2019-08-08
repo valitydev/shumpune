@@ -21,7 +21,7 @@ public class BalanceModelMapper implements RowMapper<BalanceModel> {
         long minAmount = rs.getLong("min_available_amount");
         long clock = rs.getLong("clock");
         return BalanceModel.builder()
-                .id(id)
+                .accountId(id)
                 .ownAmount(ownAmount)
                 .maxAvailableAmount(maxAmount)
                 .minAvailableAmount(minAmount)

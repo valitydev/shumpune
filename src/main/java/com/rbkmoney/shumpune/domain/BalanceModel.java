@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class BalanceModel {
 
-    public Long id;
+    public Long accountId;
     public Long ownAmount;
     public Long maxAvailableAmount;
     public Long minAvailableAmount;
