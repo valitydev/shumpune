@@ -21,9 +21,9 @@ CREATE TABLE shm.account_log
   batch_id bigint NOT NULL,
   account_id bigint NOT NULL,
   operation shm.posting_operation_type NOT NULL,
-  own_accumulated BIGINT NULL DEFAULT 0,
-  max_accumulated BIGINT NULL DEFAULT 0,
-  min_accumulated BIGINT NULL DEFAULT 0,
+  own_amount BIGINT NULL DEFAULT 0,
+  max_available_amount BIGINT NULL DEFAULT 0,
+  min_available_amount BIGINT NULL DEFAULT 0,
   clock BIGINT NOT NULL DEFAULT 0,
   creation_time timestamp without time zone NOT NULL,
   CONSTRAINT account_log_pkey PRIMARY KEY (id)

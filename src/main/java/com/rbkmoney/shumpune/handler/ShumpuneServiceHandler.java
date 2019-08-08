@@ -38,7 +38,12 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
     }
 
     @Override
-    public Account getAccountByID(long l, Clock clock) throws AccountNotFound, ClockInFuture, TException {
+    public Account getAccountByID(long l) throws AccountNotFound, TException {
+        return null;
+    }
+
+    @Override
+    public Balance getBalanceByID(long l, Clock clock) throws AccountNotFound, ClockInFuture, TException {
         return null;
     }
 

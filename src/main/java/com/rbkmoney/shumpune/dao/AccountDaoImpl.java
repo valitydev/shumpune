@@ -2,8 +2,8 @@ package com.rbkmoney.shumpune.dao;
 
 import com.rbkmoney.damsel.shumpune.AccountPrototype;
 import com.rbkmoney.geck.common.util.TypeUtil;
-import com.rbkmoney.shumpune.dao.mapper.AccountSnapshotMapper;
-import com.rbkmoney.shumpune.domain.AccountSnapshot;
+import com.rbkmoney.shumpune.dao.mapper.BalanceModelMapper;
+import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.exception.DaoException;
 import org.springframework.core.NestedRuntimeException;
 import org.springframework.jdbc.core.RowMapper;
@@ -21,11 +21,11 @@ import java.time.ZoneOffset;
 @Service
 public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements AccountDao {
 
-    private final RowMapper<AccountSnapshot> accountMapper;
+    private final RowMapper<BalanceModel> balanceRowMapper;
 
-    public AccountDaoImpl(DataSource ds, AccountSnapshotMapper accountMapper) {
+    public AccountDaoImpl(DataSource ds, BalanceModelMapper balanceModelMapper) {
         setDataSource(ds);
-        this.accountMapper = accountMapper;
+        this.balanceRowMapper = balanceModelMapper;
     }
 
     @Override
@@ -58,16 +58,15 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
     }
 
     @Override
-    public AccountSnapshot getSnapshotById(Long id, Long clock) {
+    public BalanceModel getBalanceById(Long id, Long clock) {
         if (id != null && clock != null) {
-            final String sql = "select ac.*, al.id as clock, al.own_accumulated, al.max_accumulated, al.min_accumulated from" +
-                    " (select t1.id, t1.curr_sym_code from shm.account t1 where t1.id = any(ids)) ac LEFT JOIN" +
-                    " (select t2.id, t2.account_id, t2.own_accumulated, t2.max_accumulated, t2.min_accumulated from shm.account_log t2) al" +
-                    " on ac.id = al.account_id and al.id = (select max(t3.id) from shm.account_log t3  where t3.account_id=ac.id)";
+            final String sql = "select ";
             try {
-                AccountSnapshot accountSnapshot = getJdbcTemplate()
-                        .queryForObject(sql, accountMapper);
-                return accountSnapshot;
+                BalanceModel balanceModel = getJdbcTemplate()
+                        .queryForObject(sql, balanceRowMapper);
+                if (balanceModel != null && balanceModel.getClock() >= clock) {
+                    return balanceModel;
+                }
             } catch (NestedRuntimeException e) {
                 throw new DaoException(e);
             }
