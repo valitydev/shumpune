@@ -28,8 +28,8 @@ public class PostingPlanService {
         postingBatchValidator.validate(postingPlanChange.getBatch());
 
         PostingPlanModel postingPlanModel = converter.convert(postingPlanChange);
-        planDao.addOrUpdatePlanLog(postingPlanModel);
         planDao.insertPostings(postingPlanModel.getPostingModels());
+        planDao.addOrUpdatePlanLog(postingPlanModel);
 
         return Clock.vector(VectorClockSerializer.serialize(postingPlanModel.getPostingPlanInfo().getClock()));
     }

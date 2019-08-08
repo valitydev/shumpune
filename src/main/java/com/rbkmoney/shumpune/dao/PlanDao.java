@@ -10,6 +10,6 @@ public interface PlanDao {
 
     PostingPlanModel addOrUpdatePlanLog(PostingPlanModel planLog) throws DaoException;
 
-    void insertPostings(List<PostingModel> postingModels);
+    long insertPostings(List<PostingModel> postingModels);
 
 }

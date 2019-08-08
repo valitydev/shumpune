@@ -5,7 +5,6 @@ import com.rbkmoney.shumpune.domain.PostingModel;
 import com.rbkmoney.shumpune.domain.PostingPlanInfo;
 import com.rbkmoney.shumpune.domain.PostingPlanModel;
 import com.rbkmoney.shumpune.exception.DaoException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.core.NestedRuntimeException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -59,8 +58,9 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
     }
 
     @Override
-    public void insertPostings(List<PostingModel> postings) {
+    public long insertPostings(List<PostingModel> postings) {
         final String sql = "INSERT INTO shm.posting_log(plan_id, batch_id, from_account_id, to_account_id, amount, curr_sym_code, operation, description) VALUES (?, ?, ?, ?, ?, ?, ?::shm.posting_operation_type, ?)";
+
         int[][] updateCounts = getJdbcTemplate().batchUpdate(sql, postings, BATCH_SIZE,
                 (ps, argument) -> {
                     ps.setString(1, argument.getPlanId());
@@ -73,6 +73,26 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
                     ps.setString(8, argument.getDescription());
                 });
         boolean checked = false;
+
+        checkButchUpdate(updateCounts, checked);
+
+        PostingModel postingModel = postings.get(0);
+
+        return getClock(postingModel);
+    }
+
+    private long getClock(PostingModel postingModel) {
+        MapSqlParameterSource params = new MapSqlParameterSource("planId", postingModel.planId)
+                .addValue("batchId", postingModel.planId);
+
+        String getClock = "select max(id) as clock " +
+                "from shm.posting_log " +
+                "where plan_id = :planId and batch_id= :batchId";
+
+        return getNamedParameterJdbcTemplate().queryForObject(getClock, params, Long.class);
+    }
+
+    private void checkButchUpdate(int[][] updateCounts, boolean checked) {
         for (int i = 0; i < updateCounts.length; ++i) {
             for (int j = 0; j < updateCounts[i].length; ++j) {
                 checked = true;
