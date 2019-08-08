@@ -70,6 +70,7 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
                 if (balanceModel != null && balanceModel.getClock() >= clock) {
                     return balanceModel;
                 }
+                clock = balanceModel.getClock();
             } catch (NestedRuntimeException e) {
                 throw new DaoException(e);
             }

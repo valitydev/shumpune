@@ -6,6 +6,7 @@ import com.rbkmoney.shumpune.converter.BalanceModelToBalanceConverter;
 import com.rbkmoney.shumpune.dao.AccountDao;
 import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.exception.DaoException;
+import com.rbkmoney.shumpune.service.PostingPlanService;
 import com.rbkmoney.shumpune.utils.VectorClockSerializer;
 import com.rbkmoney.woody.api.flow.error.WUnavailableResultException;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +21,20 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
 
     private final AccountDao accountDao;
     private final BalanceModelToBalanceConverter balanceModelToBalanceConverter;
+    private final PostingPlanService postingPlanService;
 
     @Override
     public Clock hold(PostingPlanChange postingPlanChange) throws InvalidPostingParams, InvalidRequest, TException {
-        return null;
+        log.info("Start hold postingPlanChange: {}", postingPlanChange);
+        try {
+            return postingPlanService.updatePostingPlan(postingPlanChange);
+        } catch (DaoException e) {
+            log.error("Failed to hold e: ", e);
+            throw new WUnavailableResultException(e);
+        } catch (Exception e) {
+            log.error("Failed to hold e: ", e);
+            throw new TException(e);
+        }
     }
 
     @Override

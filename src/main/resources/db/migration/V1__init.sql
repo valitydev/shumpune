@@ -54,3 +54,15 @@ CREATE INDEX posting_log_plan_id_idx
   ON shm.posting_log
   USING btree
   (plan_id COLLATE pg_catalog."default", batch_id);
+
+CREATE TABLE shm.plan_log
+(
+  plan_id character varying(64) NOT NULL,
+  last_batch_id bigint NOT NULL,
+  last_operation shm.posting_operation_type NOT NULL,
+  clock BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT plan_log_pkey PRIMARY KEY (plan_id)
+)
+  WITH (
+    OIDS=FALSE
+  );
