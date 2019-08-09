@@ -22,7 +22,7 @@ public class PostingBatchValidator {
     private static final String SOURCE_TARGET_ACC_EQUAL_ERR = "Source and target accounts cannot be the same";
     private static final String AMOUNT_NEGATIVE_ERR = "Amount cannot be negative";
     private static final String ACCOUNT_FOR_POSTING_NOT_FOUND = "Account for posting not found!";
-    public static final String CURRENCY_ACCOUNT_NOT_EQUALS_OPERATION_CURRENCY = "Currency account not equals operation currency!";
+    private static final String CURRENCY_ACCOUNT_NOT_EQUALS_OPERATION_CURRENCY = "Currency account not equals operation currency!";
 
     private final AccountDao accountDao;
 
