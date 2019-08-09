@@ -53,8 +53,19 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
     }
 
     @Override
-    public Account getAccountByID(long l) throws AccountNotFound, TException {
-        return null;
+    public Account getAccountByID(long accountId) throws TException {
+        log.info("Start getAccountByID accountId: {}", accountId);
+        try {
+            Account account = accountDao.getAccountById(accountId).orElseThrow(AccountNotFound::new);
+            log.info("Finish createAccount accountId: {}", account);
+            return account;
+        } catch (DaoException e) {
+            log.error("Failed to create account", e);
+            throw new WUnavailableResultException(e);
+        } catch (Exception e) {
+            log.error("Failed to create account", e);
+            throw new TException(e);
+        }
     }
 
     @Override

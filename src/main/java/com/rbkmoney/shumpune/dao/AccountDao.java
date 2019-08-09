@@ -13,5 +13,4 @@ public interface AccountDao {
     BalanceModel getBalanceById(Long id, Long clock);
 
     Optional<Account> getAccountById(Long id);
-
 }

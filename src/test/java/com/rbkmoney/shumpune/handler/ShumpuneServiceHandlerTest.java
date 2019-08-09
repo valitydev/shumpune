@@ -1,6 +1,7 @@
 package com.rbkmoney.shumpune.handler;
 
 import com.rbkmoney.damsel.shumpune.*;
+import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.shumpune.DaoTestBase;
 import com.rbkmoney.shumpune.ShumpuneApplication;
 import com.rbkmoney.shumpune.constant.PostingOperation;
@@ -24,6 +25,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 
+import static java.time.ZoneOffset.UTC;
 import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 
 @RunWith(SpringRunner.class)
@@ -116,16 +118,21 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         //simple save
         AccountPrototype accountPrototype = createAccountPrototype(now);
         long accountId = handler.createAccount(accountPrototype);
-        //todo handler.getAccountByID(accountId)
-        jdbcTemplate.query("select * from shm.account where id = " + accountId,
-                (rs, rowNum) -> assertAccounts(now, accountId, rs));
+        Account account = handler.getAccountByID(accountId);
+        assertAccount(account, accountPrototype);
+        Assert.assertEquals(now.toString(), account.getCreationTime());
 
         //save without creation_time
         AccountPrototype accountPrototypeWithoutCreationTime = createAccountPrototype(null);
-        long accountId2 = handler.createAccount(accountPrototypeWithoutCreationTime);
-        //todo handler.getAccountByID(accountId2)
-        jdbcTemplate.query("select * from shm.account where id = " + accountId2,
-                (rs, rowNum) -> assertAccounts(null, accountId2, rs));
+        accountId = handler.createAccount(accountPrototypeWithoutCreationTime);
+        account = handler.getAccountByID(accountId);
+        assertAccount(account, accountPrototype);
+        Assert.assertTrue(TypeUtil.stringToInstant(account.getCreationTime()).isAfter(now));
+    }
+
+    private void assertAccount(Account account, AccountPrototype accountPrototype) {
+        Assert.assertEquals(accountPrototype.getCurrencySymCode(), account.getCurrencySymCode());
+        Assert.assertEquals(accountPrototype.getDescription(), account.getDescription());
     }
 
     @Test
@@ -148,7 +155,7 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         Assert.assertEquals("RUB", rs.getString("curr_sym_code"));
         if (now != null)
             Assert.assertEquals(now,
-                    rs.getTimestamp("creation_time").toLocalDateTime().toInstant(ZoneOffset.UTC));
+                    rs.getTimestamp("creation_time").toLocalDateTime().toInstant(UTC));
         Assert.assertEquals("test", rs.getString("description"));
         return null;
     }
