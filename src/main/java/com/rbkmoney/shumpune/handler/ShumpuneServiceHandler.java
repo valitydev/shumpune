@@ -27,7 +27,7 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
     public Clock hold(PostingPlanChange postingPlanChange) throws InvalidPostingParams, InvalidRequest, TException {
         log.info("Start hold postingPlanChange: {}", postingPlanChange);
         try {
-            return postingPlanService.updatePostingPlan(postingPlanChange);
+            return postingPlanService.hold(postingPlanChange);
         } catch (DaoException e) {
             log.error("Failed to hold e: ", e);
             throw new WUnavailableResultException(e);

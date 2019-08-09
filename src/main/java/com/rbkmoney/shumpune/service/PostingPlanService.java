@@ -1,6 +1,7 @@
 package com.rbkmoney.shumpune.service;
 
 import com.rbkmoney.damsel.shumpune.Clock;
+import com.rbkmoney.damsel.shumpune.PostingPlan;
 import com.rbkmoney.damsel.shumpune.PostingPlanChange;
 import com.rbkmoney.shumpune.converter.PostingPlanToPostingPlanModelConverter;
 import com.rbkmoney.shumpune.dao.PlanDaoImpl;
@@ -23,12 +24,11 @@ public class PostingPlanService {
     private final PostingBatchValidator postingBatchValidator;
 
     @Transactional
-    public Clock updatePostingPlan(PostingPlanChange postingPlanChange) throws TException {
+    public Clock hold(PostingPlanChange postingPlanChange) throws TException {
         postingPlanValidator.validate(postingPlanChange);
         postingBatchValidator.validate(postingPlanChange.getBatch());
 
         PostingPlanModel postingPlanModel = converter.convert(postingPlanChange);
-
 
         long clock = planDao.insertPostings(postingPlanModel.getPostingModels());
         postingPlanModel.getPostingPlanInfo().setClock(clock);

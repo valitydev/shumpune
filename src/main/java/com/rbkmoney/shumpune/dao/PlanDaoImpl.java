@@ -1,6 +1,8 @@
 package com.rbkmoney.shumpune.dao;
 
+import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.dao.mapper.PostingPlanInfoMapper;
+import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.domain.PostingModel;
 import com.rbkmoney.shumpune.domain.PostingPlanInfo;
 import com.rbkmoney.shumpune.domain.PostingPlanModel;
@@ -13,7 +15,9 @@ import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao {
@@ -77,6 +81,47 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
         checkBatchUpdate(updateCounts);
         PostingModel postingModel = postings.get(0);
         return selectMaxClock(postingModel);
+    }
+
+    @Override
+    public BalanceModel getBalance(Long accountId, Long fromClock, Long toClock) {
+        MapSqlParameterSource params = new MapSqlParameterSource("fromClock", fromClock)
+                .addValue("toClock", toClock)
+                .addValue("acc_id", accountId);
+
+        String sqlGetFrom = "select sum(amount) as own_amount, operation " +
+                "from shm.posting_log " +
+                "where id > :fromClock and id <= :toClock " +
+                "and from_account_id = :acc_id " +
+                "GROUP BY operation";
+
+        String sqlSumTo = "select sum(amount) as own_amount, operation " +
+                "from shm.posting_log " +
+                "where id > :fromClock and id <= :toClock " +
+                "and to_account_id = :acc_id " +
+                "GROUP BY operation";
+
+        Map<String, Long> sumMapFrom = new HashMap<>();
+        getNamedParameterJdbcTemplate().query(sqlGetFrom, params, rs -> {
+            sumMapFrom.put(rs.getString("operation"), rs.getLong("own_amount"));
+        });
+
+        Map<String, Long> sumMapTo = new HashMap<>();
+        getNamedParameterJdbcTemplate().query(sqlSumTo, params, rs -> {
+            sumMapTo.put(rs.getString("operation"), rs.getLong("own_amount"));
+        });
+
+        return BalanceModel.builder()
+                .accountId(accountId)
+                .clock(toClock)
+                .ownAmount(safeGetSum(sumMapTo, PostingOperation.COMMIT) - safeGetSum(sumMapFrom, PostingOperation.COMMIT))
+                .minAvailableAmount(safeGetSum(sumMapTo, PostingOperation.HOLD) - safeGetSum(sumMapTo, PostingOperation.ROLLBACK)
+                        - safeGetSum(sumMapFrom, PostingOperation.HOLD) - safeGetSum(sumMapFrom, PostingOperation.ROLLBACK))
+                .build();
+    }
+
+    private long safeGetSum(Map<String, Long> sumMapFrom, PostingOperation postingOperation) {
+        return sumMapFrom.containsKey(postingOperation.name()) ? sumMapFrom.get(postingOperation.name()) : 0L;
     }
 
     private long selectMaxClock(PostingModel postingModel) {

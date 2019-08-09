@@ -5,6 +5,9 @@ import com.rbkmoney.shumpune.DaoTestBase;
 import com.rbkmoney.shumpune.ShumpuneApplication;
 import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.dao.AccountDao;
+import com.rbkmoney.shumpune.dao.PlanDao;
+import com.rbkmoney.shumpune.domain.BalanceModel;
+import com.rbkmoney.shumpune.utils.VectorClockSerializer;
 import org.apache.thrift.TException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -36,9 +39,12 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
     @Autowired
     ShumpuneServiceHandler handler;
 
+    @Autowired
+    PlanDao planDao;
+
     @Test(expected = TException.class)
     public void holdAccountNotFountError() throws TException {
-        PostingPlanChange postingPlanChange = createPostingPanChange(1111L, 22222L);
+        PostingPlanChange postingPlanChange = createPostingPanChange(1111L, 21L, 22222L);
         handler.hold(postingPlanChange);
     }
 
@@ -48,12 +54,12 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
 
         //simple save
         AccountPrototype accountPrototype = createAccountPrototype(now);
-        long accountIdFrom = handler.createAccount(accountPrototype);
+        long providerAcc = handler.createAccount(accountPrototype);
+        long merchantAcc = handler.createAccount(accountPrototype);
+        long systemAcc = handler.createAccount(accountPrototype);
 
-        long accountIdTo = handler.createAccount(accountPrototype);
-
-        PostingPlanChange postingPlanChange = createPostingPanChange(accountIdFrom, accountIdTo);
-        handler.hold(postingPlanChange);
+        PostingPlanChange postingPlanChange = createPostingPanChange(providerAcc, systemAcc, merchantAcc);
+        Clock clock = handler.hold(postingPlanChange);
 
         jdbcTemplate.query("select * from shm.plan_log where plan_id = \'" + postingPlanChange.getId() + "\'",
                 (rs, rowNum) -> {
@@ -62,19 +68,40 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
                     Assert.assertTrue(rs.getLong("clock") > 0);
                     return null;
                 });
+
+        BalanceModel balance = planDao.getBalance(providerAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(-294000L, balance.getMinAvailableAmount().longValue());
+
+        BalanceModel balanceMerch = planDao.getBalance(merchantAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(291000L, balanceMerch.getMinAvailableAmount().longValue());
+
+        BalanceModel balanceSystem = planDao.getBalance(systemAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(3000L, balanceSystem.getMinAvailableAmount().longValue());
     }
 
     @NotNull
-    private PostingPlanChange createPostingPanChange(Long fromAcc, Long toAcc) {
+    private PostingPlanChange createPostingPanChange(Long providerAcc, Long systemAcc, Long merchantAcc) {
         PostingPlanChange postingPlanChange = new PostingPlanChange();
         PostingBatch batch = new PostingBatch();
         batch.setId(1L);
         ArrayList<Posting> postings = new ArrayList<>();
         postings.add(new Posting()
                 .setCurrencySymCode("RUB")
-                .setAmount(123)
-                .setFromId(fromAcc)
-                .setToId(toAcc)
+                .setAmount(300000)
+                .setFromId(providerAcc)
+                .setToId(merchantAcc)
+                .setDescription("qwe"));
+        postings.add(new Posting()
+                .setCurrencySymCode("RUB")
+                .setAmount(9000)
+                .setFromId(merchantAcc)
+                .setToId(systemAcc)
+                .setDescription("qwe"));
+        postings.add(new Posting()
+                .setCurrencySymCode("RUB")
+                .setAmount(6000)
+                .setFromId(systemAcc)
+                .setToId(providerAcc)
                 .setDescription("qwe"));
         batch.setPostings(postings);
         postingPlanChange.setBatch(batch)
@@ -107,8 +134,6 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         long account = handler.createAccount(createAccountPrototype(null));
         Balance balanceByID = handler.getBalanceByID(account, Clock.latest(new LatestClock()));
         assertZeroBalances(account, balanceByID);
-
-
     }
 
     private void assertZeroBalances(long account, Balance balanceByID) {
