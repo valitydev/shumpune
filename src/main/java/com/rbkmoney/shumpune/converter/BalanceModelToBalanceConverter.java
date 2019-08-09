@@ -14,7 +14,7 @@ public class BalanceModelToBalanceConverter implements Converter<BalanceModel, B
     public Balance convert(BalanceModel balanceModel) {
         return new Balance()
                 .setId(balanceModel.getAccountId())
-                .setClock(Clock.vector(VectorClockSerializer.serialize(balanceModel.getClock().longValue())))
+                .setClock(Clock.vector(VectorClockSerializer.serialize(balanceModel.getClock())))
                 .setMinAvailableAmount(balanceModel.getMinAvailableAmount())
                 .setMaxAvailableAmount(balanceModel.getMaxAvailableAmount())
                 .setOwnAmount(balanceModel.getOwnAmount());

@@ -89,12 +89,14 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         //simple save
         AccountPrototype accountPrototype = createAccountPrototype(now);
         long accountId = handler.createAccount(accountPrototype);
+        //todo handler.getAccountByID(accountId)
         jdbcTemplate.query("select * from shm.account where id = " + accountId,
                 (rs, rowNum) -> assertAccounts(now, accountId, rs));
 
         //save without creation_time
         AccountPrototype accountPrototypeWithoutCreationTime = createAccountPrototype(null);
         long accountId2 = handler.createAccount(accountPrototypeWithoutCreationTime);
+        //todo handler.getAccountByID(accountId2)
         jdbcTemplate.query("select * from shm.account where id = " + accountId2,
                 (rs, rowNum) -> assertAccounts(null, accountId2, rs));
     }
@@ -104,10 +106,12 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         //new account
         long account = handler.createAccount(createAccountPrototype(null));
         Balance balanceByID = handler.getBalanceByID(account, Clock.latest(new LatestClock()));
-        assertBalanceOfNewAcc(account, balanceByID);
+        assertZeroBalances(account, balanceByID);
+
+
     }
 
-    private void assertBalanceOfNewAcc(long account, Balance balanceByID) {
+    private void assertZeroBalances(long account, Balance balanceByID) {
         Assert.assertEquals(account, balanceByID.getId());
         Assert.assertEquals(0L, balanceByID.getMaxAvailableAmount());
         Assert.assertEquals(0L, balanceByID.getMinAvailableAmount());

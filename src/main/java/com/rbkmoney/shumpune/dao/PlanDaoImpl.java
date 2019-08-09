@@ -74,7 +74,7 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
                     ps.setString(8, argument.getOperation().name());
                     ps.setString(9, argument.getDescription());
                 });
-        checkButchUpdate(updateCounts);
+        checkBatchUpdate(updateCounts);
         PostingModel postingModel = postings.get(0);
         return selectMaxClock(postingModel);
     }
@@ -90,7 +90,7 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
         return getNamedParameterJdbcTemplate().queryForObject(sqlGetClock, params, Long.class);
     }
 
-    private void checkButchUpdate(int[][] updateCounts) {
+    private void checkBatchUpdate(int[][] updateCounts) {
         boolean checked = false;
         for (int i = 0; i < updateCounts.length; ++i) {
             for (int j = 0; j < updateCounts[i].length; ++j) {
