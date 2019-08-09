@@ -49,9 +49,9 @@ public class PostingBatchValidator {
             if (!errorMessages.isEmpty()) {
                 errors.put(posting, generateMessage(errorMessages));
             }
-            if (!errors.isEmpty()) {
-                throw new InvalidPostingParams(errors);
-            }
+        }
+        if (!errors.isEmpty()) {
+            throw new InvalidPostingParams(errors);
         }
     }
 
