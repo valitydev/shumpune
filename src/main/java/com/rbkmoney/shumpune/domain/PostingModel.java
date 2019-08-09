@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,6 +21,7 @@ public class PostingModel {
     public Long amount;
     public String currencySymbCode;
     public String description;
+    private Instant creationTime;
     public PostingOperation operation;
 
 }

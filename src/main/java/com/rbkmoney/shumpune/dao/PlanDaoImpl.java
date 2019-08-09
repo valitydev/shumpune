@@ -12,6 +12,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
+import java.sql.Timestamp;
 import java.util.List;
 
 @Component
@@ -29,11 +30,11 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
     @Override
     public PostingPlanModel addOrUpdatePlanLog(PostingPlanModel planLog) throws DaoException {
         final String sql =
-                "insert into shm.plan_log (plan_id, last_batch_id, last_access_time, last_operation) " +
-                        "values (:plan_id, :last_batch_id, :last_access_time, :last_operation::shm.posting_operation_type) " +
+                "insert into shm.plan_log (plan_id, last_batch_id, clock, last_operation) " +
+                        "values (:plan_id, :last_batch_id, :clock, :last_operation::shm.posting_operation_type) " +
                         "on conflict (plan_id) " +
-                        "do update set last_access_time=:last_access_time, last_operation=:last_operation::shm.posting_operation_type, last_batch_id=:last_batch_id " +
-                        "where shm.plan_log.last_operation=:overridable_operation::shm.posting_operation_type " +
+                        "do update set clock=:clock, last_operation=:last_operation::shm.posting_operation_type, last_batch_id=:last_batch_id " +
+                        "where shm.plan_log.last_operation=:last_operation::shm.posting_operation_type " +
                         "returning *";
 
         MapSqlParameterSource params = createParams(planLog.getPostingPlanInfo());
@@ -59,7 +60,7 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
 
     @Override
     public long insertPostings(List<PostingModel> postings) {
-        final String sql = "INSERT INTO shm.posting_log(plan_id, batch_id, from_account_id, to_account_id, amount, curr_sym_code, operation, description) VALUES (?, ?, ?, ?, ?, ?, ?::shm.posting_operation_type, ?)";
+        final String sql = "INSERT INTO shm.posting_log(plan_id, batch_id, from_account_id, to_account_id, creation_time, amount, curr_sym_code, operation, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?::shm.posting_operation_type, ?)";
 
         int[][] updateCounts = getJdbcTemplate().batchUpdate(sql, postings, BATCH_SIZE,
                 (ps, argument) -> {
@@ -67,32 +68,30 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
                     ps.setLong(2, argument.getBatchId());
                     ps.setLong(3, argument.getAccountFromId());
                     ps.setLong(4, argument.getAccountToId());
-                    ps.setLong(5, argument.getAmount());
-                    ps.setString(6, argument.getCurrencySymbCode());
-                    ps.setString(7, argument.getOperation().name());
-                    ps.setString(8, argument.getDescription());
+                    ps.setTimestamp(5, Timestamp.from(argument.getCreationTime()));
+                    ps.setLong(6, argument.getAmount());
+                    ps.setString(7, argument.getCurrencySymbCode());
+                    ps.setString(8, argument.getOperation().name());
+                    ps.setString(9, argument.getDescription());
                 });
-        boolean checked = false;
-
-        checkButchUpdate(updateCounts, checked);
-
+        checkButchUpdate(updateCounts);
         PostingModel postingModel = postings.get(0);
-
-        return getClock(postingModel);
+        return selectMaxClock(postingModel);
     }
 
-    private long getClock(PostingModel postingModel) {
+    private long selectMaxClock(PostingModel postingModel) {
         MapSqlParameterSource params = new MapSqlParameterSource("planId", postingModel.planId)
-                .addValue("batchId", postingModel.planId);
+                .addValue("batchId", postingModel.batchId);
 
-        String getClock = "select max(id) as clock " +
+        String sqlGetClock = "select max(id) as clock " +
                 "from shm.posting_log " +
                 "where plan_id = :planId and batch_id= :batchId";
 
-        return getNamedParameterJdbcTemplate().queryForObject(getClock, params, Long.class);
+        return getNamedParameterJdbcTemplate().queryForObject(sqlGetClock, params, Long.class);
     }
 
-    private void checkButchUpdate(int[][] updateCounts, boolean checked) {
+    private void checkButchUpdate(int[][] updateCounts) {
+        boolean checked = false;
         for (int i = 0; i < updateCounts.length; ++i) {
             for (int j = 0; j < updateCounts[i].length; ++j) {
                 checked = true;

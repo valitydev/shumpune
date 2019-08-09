@@ -1,11 +1,9 @@
 package com.rbkmoney.shumpune.handler;
 
-import com.rbkmoney.damsel.shumpune.AccountPrototype;
-import com.rbkmoney.damsel.shumpune.Balance;
-import com.rbkmoney.damsel.shumpune.Clock;
-import com.rbkmoney.damsel.shumpune.LatestClock;
+import com.rbkmoney.damsel.shumpune.*;
 import com.rbkmoney.shumpune.DaoTestBase;
 import com.rbkmoney.shumpune.ShumpuneApplication;
+import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.dao.AccountDao;
 import org.apache.thrift.TException;
 import org.jetbrains.annotations.NotNull;
@@ -21,6 +19,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 
 import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 
@@ -36,6 +35,52 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
 
     @Autowired
     ShumpuneServiceHandler handler;
+
+    @Test(expected = TException.class)
+    public void holdAccountNotFountError() throws TException {
+        PostingPlanChange postingPlanChange = createPostingPanChange(1111L, 22222L);
+        handler.hold(postingPlanChange);
+    }
+
+    @Test
+    public void hold() throws TException {
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = createAccountPrototype(now);
+        long accountIdFrom = handler.createAccount(accountPrototype);
+
+        long accountIdTo = handler.createAccount(accountPrototype);
+
+        PostingPlanChange postingPlanChange = createPostingPanChange(accountIdFrom, accountIdTo);
+        handler.hold(postingPlanChange);
+
+        jdbcTemplate.query("select * from shm.plan_log where plan_id = \'" + postingPlanChange.getId() + "\'",
+                (rs, rowNum) -> {
+                    Assert.assertEquals(PostingOperation.HOLD.name(), rs.getString("last_operation"));
+                    Assert.assertEquals(postingPlanChange.getBatch().getId(), rs.getLong("last_batch_id"));
+                    Assert.assertTrue(rs.getLong("clock") > 0);
+                    return null;
+                });
+    }
+
+    @NotNull
+    private PostingPlanChange createPostingPanChange(Long fromAcc, Long toAcc) {
+        PostingPlanChange postingPlanChange = new PostingPlanChange();
+        PostingBatch batch = new PostingBatch();
+        batch.setId(1L);
+        ArrayList<Posting> postings = new ArrayList<>();
+        postings.add(new Posting()
+                .setCurrencySymCode("RUB")
+                .setAmount(123)
+                .setFromId(fromAcc)
+                .setToId(toAcc)
+                .setDescription("qwe"));
+        batch.setPostings(postings);
+        postingPlanChange.setBatch(batch)
+                .setId("plan");
+        return postingPlanChange;
+    }
 
     @Test
     public void createAccount() throws TException {

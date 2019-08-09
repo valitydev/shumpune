@@ -6,6 +6,7 @@ import com.rbkmoney.shumpune.domain.PostingModel;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,7 @@ public class PostingPlanToListPostingModelConverter implements Converter<Posting
                         .amount(p.amount)
                         .batchId(source.getBatch().getId())
                         .planId(source.id)
+                        .creationTime(Instant.now())
                         .operation(PostingOperation.HOLD)
                         .currencySymbCode(p.currency_sym_code)
                         .description(p.description)

@@ -1,7 +1,9 @@
 package com.rbkmoney.shumpune.dao;
 
+import com.rbkmoney.damsel.shumpune.Account;
 import com.rbkmoney.damsel.shumpune.AccountPrototype;
 import com.rbkmoney.geck.common.util.TypeUtil;
+import com.rbkmoney.shumpune.dao.mapper.AccountMapper;
 import com.rbkmoney.shumpune.dao.mapper.BalanceModelMapper;
 import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.exception.DaoException;
@@ -17,20 +19,25 @@ import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements AccountDao {
 
     private final RowMapper<BalanceModel> balanceRowMapper;
+    private final AccountMapper accountMapper;
 
-    public AccountDaoImpl(DataSource ds, BalanceModelMapper balanceModelMapper) {
+    public AccountDaoImpl(DataSource ds, BalanceModelMapper balanceModelMapper, AccountMapper accountMapper) {
         setDataSource(ds);
         this.balanceRowMapper = balanceModelMapper;
+        this.accountMapper = accountMapper;
     }
 
     @Override
     public Long insert(AccountPrototype prototype) {
-        final String sql = "INSERT INTO shm.account(curr_sym_code, creation_time, description) " +
+        final String sql =
+                "INSERT INTO shm.account(curr_sym_code, creation_time, description) " +
                 "VALUES (:curr_sym_code, :creation_time, :description) RETURNING id;";
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("curr_sym_code", prototype.getCurrencySymCode());
@@ -61,7 +68,8 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
     public BalanceModel getBalanceById(Long id, Long clock) {
         if (id != null && clock != null) {
             MapSqlParameterSource params = new MapSqlParameterSource("accId", id);
-            final String sql = "select id, own_amount, max_available_amount, min_available_amount, max(clock) " +
+            final String sql =
+                    "select id, own_amount, max_available_amount, min_available_amount, max(clock) " +
                     "from shm.account_log " +
                     "where account_id = :accId";
             try {
@@ -77,6 +85,25 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
         }
 
         return null;
+    }
+
+    @Override
+    public Optional<Account> getAccountById(Long id) {
+        final String sql =
+                "select id, curr_sym_code, creation_time, description " +
+                        "from shm.account " +
+                        "where id = :id";
+        MapSqlParameterSource params = new MapSqlParameterSource("id", id);
+        try {
+            List<Account> accounts = getNamedParameterJdbcTemplate()
+                    .query(sql, params, accountMapper);
+            if (accounts == null || accounts.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.ofNullable(accounts.get(0));
+        } catch (NestedRuntimeException e) {
+            throw new DaoException(e);
+        }
     }
 
 }
