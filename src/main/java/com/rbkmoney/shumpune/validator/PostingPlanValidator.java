@@ -13,7 +13,7 @@ import java.util.List;
 @Component
 public class PostingPlanValidator {
 
-    private static final String POSTING_PLAN_EMPTY = "Plan ($s) has no batches inside";
+    private static final String POSTING_PLAN_EMPTY = "Plan (%s) has no batches inside";
     private static final String POSTING_BATCH_EMPTY = "Posting batch (%d) has no postings inside";
 
     public void validate(PostingPlanChange postingPlanChange) throws InvalidRequest {
