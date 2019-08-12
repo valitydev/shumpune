@@ -185,8 +185,8 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
     }
 
     private long selectMaxClock(PostingModel postingModel) {
-        MapSqlParameterSource params = new MapSqlParameterSource("planId", postingModel.planId)
-                .addValue("batchId", postingModel.batchId);
+        MapSqlParameterSource params = new MapSqlParameterSource("planId", postingModel.getPlanId())
+                .addValue("batchId", postingModel.getBatchId());
 
         String sqlGetClock = "select max(id) as clock " +
                 "from shm.posting_log " +
