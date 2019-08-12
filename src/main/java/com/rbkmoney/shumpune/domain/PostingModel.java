@@ -14,14 +14,14 @@ import java.time.Instant;
 @AllArgsConstructor
 public class PostingModel {
 
-    public String planId;
-    public Long batchId;
-    public Long accountFromId;
-    public Long accountToId;
-    public Long amount;
-    public String currencySymbCode;
-    public String description;
+    private String planId;
+    private Long batchId;
+    private Long accountFromId;
+    private Long accountToId;
+    private Long amount;
+    private String currencySymbCode;
+    private String description;
     private Instant creationTime;
-    public PostingOperation operation;
+    private PostingOperation operation;
 
 }

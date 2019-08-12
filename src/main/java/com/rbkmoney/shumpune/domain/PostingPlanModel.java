@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class PostingPlanModel {
 
-    public PostingPlanInfo postingPlanInfo;
-    public List<PostingModel> postingModels;
+    private PostingPlanInfo postingPlanInfo;
+    private List<PostingModel> postingModels;
 
 }

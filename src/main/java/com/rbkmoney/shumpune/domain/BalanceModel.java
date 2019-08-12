@@ -11,10 +11,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class BalanceModel {
 
-    public Long accountId;
-    public Long ownAmount;
-    public Long maxAvailableAmount;
-    public Long minAvailableAmount;
-    public Long clock;
+    private Long accountId;
+    private Long ownAmount;
+    private Long maxAvailableAmount;
+    private Long minAvailableAmount;
+    private Long clock;
 
 }
