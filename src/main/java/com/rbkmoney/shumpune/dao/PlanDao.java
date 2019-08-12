@@ -21,6 +21,8 @@ public interface PlanDao {
 
     PostingPlanInfo updatePlanLog(PostingPlanInfo postingPlanInfo);
 
+    PostingPlanModel getPostingPlanById(String planId);
+
     Map<Long, List<PostingModel>> getPostingLogs(String planId, PostingOperation operation);
 
 }

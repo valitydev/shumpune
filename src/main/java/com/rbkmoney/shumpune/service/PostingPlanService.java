@@ -23,7 +23,7 @@ import org.apache.thrift.TException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -57,6 +57,15 @@ public class PostingPlanService {
 
     @Transactional
     public Clock commit(PostingPlan postingPlan) throws TException {
+        return finalOperation(postingPlan, PostingOperation.COMMIT);
+    }
+
+    @Transactional
+    public Clock rollback(PostingPlan postingPlan) throws TException {
+        return finalOperation(postingPlan, PostingOperation.ROLLBACK);
+    }
+
+    private Clock finalOperation(PostingPlan postingPlan, PostingOperation postingOperation) throws TException {
         finalOpValidator.validate(postingPlan);
         for (PostingBatch postingBatch : postingPlan.getBatchList()) {
             postingBatchValidator.validate(postingBatch);
@@ -64,20 +73,19 @@ public class PostingPlanService {
 
         PostingPlanInfo oldPostingPlanInfo = planDao.selectForUpdatePlanLog(postingPlan.getId());
         if (oldPostingPlanInfo == null) {
-            throw new InvalidRequest(Arrays.asList(String.format("Hold operation not found for plan: %s", postingPlan.getId())));
+            throw new InvalidRequest(Collections.singletonList(String.format("Hold operation not found for plan: %s", postingPlan.getId())));
         }
 
         Map<Long, List<PostingModel>> postingLogs = planDao.getPostingLogs(oldPostingPlanInfo.getId(), oldPostingPlanInfo.getPostingOperation());
         postingsUpdateValidator.validate(postingPlan, postingLogs);
 
-
         long clock = planDao.insertPostings(postingPlanToListPostingModelListConverter.convert(postingPlan).stream()
-                .peek(p -> p.setOperation(PostingOperation.COMMIT))
+                .peek(p -> p.setOperation(postingOperation))
                 .collect(Collectors.toList()));
 
         PostingPlanInfo newPostingPlanInfo = postingPlanToPostingPlanInfoConverter.convert(postingPlan);
         newPostingPlanInfo.setClock(clock);
-        newPostingPlanInfo.setPostingOperation(PostingOperation.COMMIT);
+        newPostingPlanInfo.setPostingOperation(postingOperation);
 
         PostingPlanInfo updatePlanLog = planDao.updatePlanLog(newPostingPlanInfo);
 

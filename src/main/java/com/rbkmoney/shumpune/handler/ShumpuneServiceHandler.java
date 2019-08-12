@@ -3,7 +3,9 @@ package com.rbkmoney.shumpune.handler;
 import com.rbkmoney.damsel.shumpune.*;
 import com.rbkmoney.shumpune.converter.BalanceModelToBalanceConverter;
 import com.rbkmoney.shumpune.dao.AccountDao;
+import com.rbkmoney.shumpune.dao.PlanDao;
 import com.rbkmoney.shumpune.domain.BalanceModel;
+import com.rbkmoney.shumpune.domain.PostingPlanModel;
 import com.rbkmoney.shumpune.exception.DaoException;
 import com.rbkmoney.shumpune.service.PostingPlanService;
 import com.rbkmoney.shumpune.utils.VectorClockSerializer;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Component;
 public class ShumpuneServiceHandler implements AccounterSrv.Iface {
 
     private final AccountDao accountDao;
+    private final PlanDao planDao;
     private final BalanceModelToBalanceConverter balanceModelToBalanceConverter;
     private final PostingPlanService postingPlanService;
 
@@ -52,12 +55,32 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
 
     @Override
     public Clock rollbackPlan(PostingPlan postingPlan) throws TException {
-        return null;
+        log.info("Start rollbackPlan postingPlan: {}", postingPlan);
+        try {
+            return postingPlanService.rollback(postingPlan);
+        } catch (DaoException e) {
+            log.error("Failed to rollbackPlan e: ", e);
+            throw new WUnavailableResultException(e);
+        } catch (Exception e) {
+            log.error("Failed to rollbackPlan e: ", e);
+            throw new TException(e);
+        }
     }
 
     @Override
-    public PostingPlan getPlan(String s) throws PlanNotFound, TException {
-        return null;
+    public PostingPlan getPlan(String planId) throws PlanNotFound, TException {
+        log.info("Start getPlan planId: {}", planId);
+        try {
+            PostingPlanModel postingPlanModel = planDao.getPostingPlanById(planId);
+            log.info("Finish getPlan accountId: {}", postingPlanModel);
+            return null;
+        } catch (DaoException e) {
+            log.error("Failed to getPlan e: ", e);
+            throw new WUnavailableResultException(e);
+        } catch (Exception e) {
+            log.error("Failed to getPlan e: ", e);
+            throw new TException(e);
+        }
     }
 
     @Override

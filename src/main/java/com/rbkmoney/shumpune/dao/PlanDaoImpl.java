@@ -15,6 +15,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +33,11 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
     public static final String CLOCK = "clock";
     public static final String OPERATION = "operation";
     public static final String BATCH_ID = "batchId";
+    public static final String SQL_GET_SUM_BY_ACC = "select sum(amount) as own_amount, operation " +
+            "from shm.posting_log " +
+            "where id > :fromClock and id <= :toClock " +
+            "and %s = :acc_id " +
+            "GROUP BY operation";
 
     private final PostingPlanInfoMapper planRowMapper;
     private final PostingModelMapper postingModelMapper;
@@ -115,26 +122,16 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
                 .addValue("toClock", toClock)
                 .addValue("acc_id", accountId);
 
-        String sqlGetFrom = "select sum(amount) as own_amount, operation " +
-                "from shm.posting_log " +
-                "where id > :fromClock and id <= :toClock " +
-                "and from_account_id = :acc_id " +
-                "GROUP BY operation";
-
-        String sqlSumTo = "select sum(amount) as own_amount, operation " +
-                "from shm.posting_log " +
-                "where id > :fromClock and id <= :toClock " +
-                "and to_account_id = :acc_id " +
-                "GROUP BY operation";
-
         Map<String, Long> sumMapFrom = new HashMap<>();
-        getNamedParameterJdbcTemplate().query(sqlGetFrom, params, rs -> {
-            sumMapFrom.put(rs.getString(OPERATION), rs.getLong("own_amount"));
-        });
+        getNamedParameterJdbcTemplate()
+                .query(String.format(SQL_GET_SUM_BY_ACC, "from_account_id"), params, rs -> {
+                    putSumToByOperation(sumMapFrom, rs);
+                });
 
         Map<String, Long> sumMapTo = new HashMap<>();
-        getNamedParameterJdbcTemplate().query(sqlSumTo, params, rs -> {
-            sumMapTo.put(rs.getString(OPERATION), rs.getLong("own_amount"));
+        getNamedParameterJdbcTemplate()
+                .query(String.format(SQL_GET_SUM_BY_ACC, "to_account_id"), params, rs -> {
+                    putSumToByOperation(sumMapTo, rs);
         });
 
         return BalanceModel.builder()
@@ -142,8 +139,12 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
                 .clock(toClock)
                 .ownAmount(safeGetSum(sumMapTo, PostingOperation.COMMIT) - safeGetSum(sumMapFrom, PostingOperation.COMMIT))
                 .minAvailableAmount(safeGetSum(sumMapTo, PostingOperation.HOLD) - safeGetSum(sumMapTo, PostingOperation.ROLLBACK)
-                        - safeGetSum(sumMapFrom, PostingOperation.HOLD) - safeGetSum(sumMapFrom, PostingOperation.ROLLBACK))
+                        - (safeGetSum(sumMapFrom, PostingOperation.HOLD) - safeGetSum(sumMapFrom, PostingOperation.ROLLBACK)))
                 .build();
+    }
+
+    private void putSumToByOperation(Map<String, Long> sumMapFrom, ResultSet rs) throws SQLException {
+        sumMapFrom.put(rs.getString(OPERATION), rs.getLong("own_amount"));
     }
 
     @Override
@@ -172,6 +173,11 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
         } catch (NestedRuntimeException e) {
             throw new DaoException(e);
         }
+    }
+
+    @Override
+    public PostingPlanModel getPostingPlanById(String planId) {
+        return null;
     }
 
     private long safeGetSum(Map<String, Long> sumMapFrom, PostingOperation postingOperation) {
