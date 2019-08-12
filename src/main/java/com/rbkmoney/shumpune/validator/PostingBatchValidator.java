@@ -43,9 +43,13 @@ public class PostingBatchValidator {
 
             if (fromAccount.isEmpty() || toAccount.isEmpty()) {
                 errorMessages.add(ACCOUNT_FOR_POSTING_NOT_FOUND);
-            } else if (!fromAccount.get().getCurrencySymCode().equals(currencySymCode) || !toAccount.get().getCurrencySymCode().equals(currencySymCode)) {
+            }
+
+            if ((fromAccount.isPresent() && !fromAccount.get().getCurrencySymCode().equals(currencySymCode))
+                    || (toAccount.isPresent() && !toAccount.get().getCurrencySymCode().equals(currencySymCode))) {
                 errorMessages.add(CURRENCY_ACCOUNT_NOT_EQUALS_OPERATION_CURRENCY);
             }
+
             if (!errorMessages.isEmpty()) {
                 errors.put(posting, generateMessage(errorMessages));
             }
