@@ -63,7 +63,7 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
                 (rs, rowNum) -> {
                     Assert.assertEquals(PostingOperation.HOLD.name(), rs.getString("last_operation"));
                     Assert.assertEquals(postingPlanChange.getBatch().getId(), rs.getLong("last_batch_id"));
-                    Assert.assertTrue(rs.getLong("clock") > 0);
+                    Assert.assertTrue(rs.getLong("CLOCK") > 0);
                     return null;
                 });
 

@@ -73,7 +73,7 @@ public class PostingPlanService {
 
         PostingPlanInfo oldPostingPlanInfo = planDao.selectForUpdatePlanLog(postingPlan.getId());
         if (oldPostingPlanInfo == null) {
-            throw new InvalidRequest(Collections.singletonList(String.format("Hold operation not found for plan: %s", postingPlan.getId())));
+            throw new InvalidRequest(Collections.singletonList(String.format("Hold OPERATION not found for plan: %s", postingPlan.getId())));
         }
 
         Map<Long, List<PostingModel>> postingLogs = planDao.getPostingLogs(oldPostingPlanInfo.getId(), oldPostingPlanInfo.getPostingOperation());

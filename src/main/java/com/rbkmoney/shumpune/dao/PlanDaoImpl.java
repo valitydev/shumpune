@@ -1,5 +1,7 @@
 package com.rbkmoney.shumpune.dao;
 
+import com.rbkmoney.shumpune.constant.PlanLogFields;
+import com.rbkmoney.shumpune.constant.PostingLogFields;
 import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.dao.mapper.PostingModelMapper;
 import com.rbkmoney.shumpune.dao.mapper.PostingPlanInfoMapper;
@@ -27,13 +29,10 @@ import java.util.stream.Collectors;
 public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao {
 
     private static final int BATCH_SIZE = 1000;
-    public static final String PLAN_ID = "plan_id";
-    public static final String LAST_BATCH_ID = "last_batch_id";
-    public static final String LAST_OPERATION = "last_operation";
-    public static final String CLOCK = "clock";
+
     public static final String OPERATION = "operation";
-    public static final String BATCH_ID = "batchId";
-    public static final String SQL_GET_SUM_BY_ACC = "select sum(amount) as own_amount, operation " +
+
+    public static final String SQL_GET_SUM_BY_ACC = "select sum(AMOUNT) as own_amount, operation " +
             "from shm.posting_log " +
             "where id > :fromClock and id <= :toClock " +
             "and %s = :acc_id " +
@@ -72,10 +71,10 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
 
     private MapSqlParameterSource createParams(PostingPlanInfo planLog) {
         MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(PLAN_ID, planLog.getId());
-        params.addValue(LAST_BATCH_ID, planLog.getBatchId());
-        params.addValue(LAST_OPERATION, planLog.getPostingOperation().name());
-        params.addValue(CLOCK, planLog.getClock());
+        params.addValue(PlanLogFields.PLAN_ID, planLog.getId());
+        params.addValue(PlanLogFields.LAST_BATCH_ID, planLog.getBatchId());
+        params.addValue(PlanLogFields.LAST_OPERATION, planLog.getPostingOperation().name());
+        params.addValue(PlanLogFields.CLOCK, planLog.getClock());
         params.addValue("overridable_operation", PostingOperation.HOLD.name());
         return params;
     }
@@ -105,7 +104,7 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
     public Map<Long, List<PostingModel>> getPostingLogs(String planId, PostingOperation operation) {
         final String sql = "select * from shm.posting_log where plan_id = :plan_id and operation = :operation::shm.posting_operation_type";
         MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(PLAN_ID, planId);
+        params.addValue(PlanLogFields.PLAN_ID, planId);
         params.addValue(OPERATION, operation.name());
         try {
             return getNamedParameterJdbcTemplate()
@@ -124,13 +123,13 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
 
         Map<String, Long> sumMapFrom = new HashMap<>();
         getNamedParameterJdbcTemplate()
-                .query(String.format(SQL_GET_SUM_BY_ACC, "from_account_id"), params, rs -> {
+                .query(String.format(SQL_GET_SUM_BY_ACC, PostingLogFields.FROM_ACCOUNT_ID), params, rs -> {
                     putSumToByOperation(sumMapFrom, rs);
                 });
 
         Map<String, Long> sumMapTo = new HashMap<>();
         getNamedParameterJdbcTemplate()
-                .query(String.format(SQL_GET_SUM_BY_ACC, "to_account_id"), params, rs -> {
+                .query(String.format(SQL_GET_SUM_BY_ACC, PostingLogFields.TO_ACCOUNT_ID), params, rs -> {
                     putSumToByOperation(sumMapTo, rs);
         });
 
@@ -150,7 +149,7 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
     @Override
     public PostingPlanInfo selectForUpdatePlanLog(String planId) {
         final String sql = "select * from shm.plan_log where plan_id=:plan_id for update";
-        MapSqlParameterSource params = new MapSqlParameterSource(PLAN_ID, planId);
+        MapSqlParameterSource params = new MapSqlParameterSource(PlanLogFields.PLAN_ID, planId);
         try {
             return getNamedParameterJdbcTemplate().queryForObject(sql, params, planRowMapper);
         } catch (EmptyResultDataAccessException e) {
@@ -177,11 +176,17 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
 
     @Override
     public PostingPlanModel getPostingPlanById(String planId) {
-        return null;
+        try {
+            return null;
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        } catch (NestedRuntimeException e) {
+            throw new DaoException(e);
+        }
     }
 
     private long safeGetSum(Map<String, Long> sumMapFrom, PostingOperation postingOperation) {
-        return sumMapFrom.containsKey(postingOperation.name()) ? sumMapFrom.get(postingOperation.name()) : 0L;
+        return sumMapFrom.getOrDefault(postingOperation.name(), 0L);
     }
 
     private long selectMaxClock(PostingModel postingModel) {
@@ -197,11 +202,11 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
 
     private void checkBatchUpdate(int[][] updateCounts) {
         boolean checked = false;
-        for (int i = 0; i < updateCounts.length; ++i) {
-            for (int j = 0; j < updateCounts[i].length; ++j) {
+        for (int[] updateCount : updateCounts) {
+            for (int i : updateCount) {
                 checked = true;
-                if (updateCounts[i][j] != 1) {
-                    throw new DaoException("Posting log creation returned unexpected update count: " + updateCounts[i][j]);
+                if (i != 1) {
+                    throw new DaoException("Posting log creation returned unexpected update count: " + i);
                 }
             }
         }

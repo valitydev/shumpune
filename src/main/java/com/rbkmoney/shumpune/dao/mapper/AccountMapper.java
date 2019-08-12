@@ -17,7 +17,7 @@ public class AccountMapper implements RowMapper<Account> {
                 .setId(rs.getLong("id"))
                 .setCurrencySymCode(rs.getString("curr_sym_code"))
                 .setCreationTime(ResultSetMapperUtils.getTimeWithConvertToString(rs, "creation_time"))
-                .setDescription(rs.getString("description"));
+                .setDescription(rs.getString("DESCRIPTION"));
     }
 
 }

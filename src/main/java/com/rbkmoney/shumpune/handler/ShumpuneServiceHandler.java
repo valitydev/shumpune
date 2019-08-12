@@ -69,7 +69,7 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
 
     @Override
     public PostingPlan getPlan(String planId) throws PlanNotFound, TException {
-        log.info("Start getPlan planId: {}", planId);
+        log.info("Start getPlan PLAN_ID: {}", planId);
         try {
             PostingPlanModel postingPlanModel = planDao.getPostingPlanById(planId);
             log.info("Finish getPlan accountId: {}", postingPlanModel);
@@ -101,7 +101,7 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
 
     @Override
     public Balance getBalanceByID(long accountId, Clock clock) throws AccountNotFound, ClockInFuture, TException {
-        log.info("Start getBalanceByID accountId: {} clock: {}", accountId, clock);
+        log.info("Start getBalanceByID accountId: {} CLOCK: {}", accountId, clock);
         try {
             Long clockValue = null;
             if (clock.isSetVector()) {

@@ -17,7 +17,7 @@ public class PostingPlanInfoMapper implements RowMapper<PostingPlanInfo> {
                 .id(rs.getString("plan_id"))
                 .postingOperation(PostingOperation.valueOf(rs.getString("last_operation")))
                 .batchId(rs.getLong("last_batch_id"))
-                .clock(rs.getLong("clock"))
+                .clock(rs.getLong("CLOCK"))
                 .build();
     }
 }
