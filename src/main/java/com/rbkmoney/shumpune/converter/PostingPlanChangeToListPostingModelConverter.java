@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class PostingPlanToListPostingModelConverter implements Converter<PostingPlanChange, List<PostingModel>> {
+public class PostingPlanChangeToListPostingModelConverter implements Converter<PostingPlanChange, List<PostingModel>> {
 
     @Override
     public List<PostingModel> convert(PostingPlanChange source) {

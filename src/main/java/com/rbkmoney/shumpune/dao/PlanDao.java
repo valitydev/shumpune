@@ -1,18 +1,26 @@
 package com.rbkmoney.shumpune.dao;
 
+import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.domain.PostingModel;
+import com.rbkmoney.shumpune.domain.PostingPlanInfo;
 import com.rbkmoney.shumpune.domain.PostingPlanModel;
-import com.rbkmoney.shumpune.exception.DaoException;
 
 import java.util.List;
+import java.util.Map;
 
 public interface PlanDao {
 
-    PostingPlanModel addOrUpdatePlanLog(PostingPlanModel planLog) throws DaoException;
+    PostingPlanModel addOrUpdatePlanLog(PostingPlanModel planLog);
 
     long insertPostings(List<PostingModel> postingModels);
 
     BalanceModel getBalance(Long accountId, Long fromClock, Long toClock);
+
+    PostingPlanInfo selectForUpdatePlanLog(String planId);
+
+    PostingPlanInfo updatePlanLog(PostingPlanInfo postingPlanInfo);
+
+    Map<Long, List<PostingModel>> getPostingLogs(String planId, PostingOperation operation);
 
 }

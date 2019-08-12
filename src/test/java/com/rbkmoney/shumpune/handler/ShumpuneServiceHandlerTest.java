@@ -22,7 +22,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 
 import static java.time.ZoneOffset.UTC;
@@ -46,7 +45,7 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
 
     @Test(expected = TException.class)
     public void holdAccountNotFountError() throws TException {
-        PostingPlanChange postingPlanChange = createPostingPanChange(1111L, 21L, 22222L);
+        PostingPlanChange postingPlanChange = createPostingPlanChange("plan_hold_error", 1111L, 21L, 22222L);
         handler.hold(postingPlanChange);
     }
 
@@ -60,7 +59,8 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         long merchantAcc = handler.createAccount(accountPrototype);
         long systemAcc = handler.createAccount(accountPrototype);
 
-        PostingPlanChange postingPlanChange = createPostingPanChange(providerAcc, systemAcc, merchantAcc);
+        String planHold = "plan_hold";
+        PostingPlanChange postingPlanChange = createPostingPlanChange(planHold, providerAcc, systemAcc, merchantAcc);
         Clock clock = handler.hold(postingPlanChange);
 
         jdbcTemplate.query("select * from shm.plan_log where plan_id = \'" + postingPlanChange.getId() + "\'",
@@ -81,9 +81,87 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         Assert.assertEquals(3000L, balanceSystem.getMinAvailableAmount().longValue());
     }
 
+    @Test(expected = TException.class)
+    public void commitError() throws TException {
+
+
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = createAccountPrototype(now);
+        long providerAcc = handler.createAccount(accountPrototype);
+        long merchantAcc = handler.createAccount(accountPrototype);
+        long systemAcc = handler.createAccount(accountPrototype);
+
+        PostingBatch batch = createBatch(providerAcc, systemAcc, merchantAcc);
+        ArrayList<PostingBatch> batchList = new ArrayList<>();
+        batchList.add(batch);
+        PostingPlan postingPlan = new PostingPlan()
+                .setId("plan_commit_error")
+                .setBatchList(batchList);
+
+        handler.commitPlan(postingPlan);
+    }
+
+    @Test
+    public void commit() throws TException {
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = createAccountPrototype(now);
+        long providerAcc = handler.createAccount(accountPrototype);
+        long merchantAcc = handler.createAccount(accountPrototype);
+        long systemAcc = handler.createAccount(accountPrototype);
+
+        String planCommit = "planCommit";
+        PostingPlanChange postingPlanChange = createPostingPlanChange(planCommit, providerAcc, systemAcc, merchantAcc);
+        Clock clock = handler.hold(postingPlanChange);
+
+        PostingBatch batch = createBatch(providerAcc, systemAcc, merchantAcc);
+        ArrayList<PostingBatch> batchList = new ArrayList<>();
+        batchList.add(batch);
+        PostingPlan postingPlan = new PostingPlan()
+                .setId(planCommit)
+                .setBatchList(batchList);
+
+        clock = handler.commitPlan(postingPlan);
+
+        jdbcTemplate.query("select * from shm.plan_log where plan_id = \'" + postingPlan.getId() + "\'",
+                (rs, rowNum) -> {
+                    Assert.assertEquals(PostingOperation.COMMIT.name(), rs.getString("last_operation"));
+                    return rs.getString("last_operation");
+                });
+
+        BalanceModel balance = planDao.getBalance(providerAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(-294000L, balance.getMinAvailableAmount().longValue());
+
+        BalanceModel balanceOwn = planDao.getBalance(providerAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(-294000L, balance.getOwnAmount().longValue());
+
+        BalanceModel balanceMerch = planDao.getBalance(merchantAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(291000L, balanceMerch.getMinAvailableAmount().longValue());
+
+        BalanceModel balanceMerchOwn = planDao.getBalance(merchantAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(291000L, balanceMerch.getOwnAmount().longValue());
+
+        BalanceModel balanceSystem = planDao.getBalance(systemAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(3000L, balanceSystem.getMinAvailableAmount().longValue());
+
+        BalanceModel balanceSystemOwn = planDao.getBalance(systemAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(3000L, balanceSystem.getOwnAmount().longValue());
+    }
+
     @NotNull
-    private PostingPlanChange createPostingPanChange(Long providerAcc, Long systemAcc, Long merchantAcc) {
+    private PostingPlanChange createPostingPlanChange(String planId, Long providerAcc, Long systemAcc, Long merchantAcc) {
         PostingPlanChange postingPlanChange = new PostingPlanChange();
+        PostingBatch batch = createBatch(providerAcc, systemAcc, merchantAcc);
+        postingPlanChange.setBatch(batch)
+                .setId(planId);
+        return postingPlanChange;
+    }
+
+    @NotNull
+    private PostingBatch createBatch(Long providerAcc, Long systemAcc, Long merchantAcc) {
         PostingBatch batch = new PostingBatch();
         batch.setId(1L);
         ArrayList<Posting> postings = new ArrayList<>();
@@ -106,9 +184,7 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
                 .setToId(providerAcc)
                 .setDescription("qwe"));
         batch.setPostings(postings);
-        postingPlanChange.setBatch(batch)
-                .setId("plan");
-        return postingPlanChange;
+        return batch;
     }
 
     @Test
@@ -133,14 +209,6 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
     private void assertAccount(Account account, AccountPrototype accountPrototype) {
         Assert.assertEquals(accountPrototype.getCurrencySymCode(), account.getCurrencySymCode());
         Assert.assertEquals(accountPrototype.getDescription(), account.getDescription());
-    }
-
-    @Test
-    public void getBalanceByIdTest() throws TException {
-        //new account
-        long account = handler.createAccount(createAccountPrototype(null));
-        Balance balanceByID = handler.getBalanceByID(account, Clock.latest(new LatestClock()));
-        assertZeroBalances(account, balanceByID);
     }
 
     private void assertZeroBalances(long account, Balance balanceByID) {

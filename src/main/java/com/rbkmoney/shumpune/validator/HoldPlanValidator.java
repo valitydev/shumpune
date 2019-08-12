@@ -11,7 +11,7 @@ import java.util.List;
 
 @Slf4j
 @Component
-public class PostingPlanValidator {
+public class HoldPlanValidator {
 
     private static final String POSTING_PLAN_EMPTY = "Plan (%s) has no batches inside";
     private static final String POSTING_BATCH_EMPTY = "Posting batch (%d) has no postings inside";

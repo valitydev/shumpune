@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PostingPlanToPostingPlanModelConverter implements Converter<PostingPlanChange, PostingPlanModel> {
 
-    private final PostingPlanToListPostingModelConverter planToListPostingModelConverter;
+    private final PostingPlanChangeToListPostingModelConverter planToListPostingModelConverter;
 
     @Override
     public PostingPlanModel convert(PostingPlanChange source) {

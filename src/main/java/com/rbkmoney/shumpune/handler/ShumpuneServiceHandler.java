@@ -1,7 +1,6 @@
 package com.rbkmoney.shumpune.handler;
 
 import com.rbkmoney.damsel.shumpune.*;
-import com.rbkmoney.damsel.shumpune.base.InvalidRequest;
 import com.rbkmoney.shumpune.converter.BalanceModelToBalanceConverter;
 import com.rbkmoney.shumpune.dao.AccountDao;
 import com.rbkmoney.shumpune.domain.BalanceModel;
@@ -24,7 +23,7 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
     private final PostingPlanService postingPlanService;
 
     @Override
-    public Clock hold(PostingPlanChange postingPlanChange) throws InvalidPostingParams, InvalidRequest, TException {
+    public Clock hold(PostingPlanChange postingPlanChange) throws TException {
         log.info("Start hold postingPlanChange: {}", postingPlanChange);
         try {
             return postingPlanService.hold(postingPlanChange);
@@ -38,12 +37,21 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
     }
 
     @Override
-    public Clock commitPlan(PostingPlan postingPlan) throws InvalidPostingParams, InvalidRequest, TException {
-        return null;
+    public Clock commitPlan(PostingPlan postingPlan) throws TException {
+        log.info("Start commitPlan postingPlan: {}", postingPlan);
+        try {
+            return postingPlanService.commit(postingPlan);
+        } catch (DaoException e) {
+            log.error("Failed to commitPlan e: ", e);
+            throw new WUnavailableResultException(e);
+        } catch (Exception e) {
+            log.error("Failed to commitPlan e: ", e);
+            throw new TException(e);
+        }
     }
 
     @Override
-    public Clock rollbackPlan(PostingPlan postingPlan) throws InvalidPostingParams, InvalidRequest, TException {
+    public Clock rollbackPlan(PostingPlan postingPlan) throws TException {
         return null;
     }
 
