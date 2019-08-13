@@ -1,5 +1,6 @@
 package com.rbkmoney.shumpune.dao.mapper;
 
+import com.rbkmoney.shumpune.constant.AccountLogFields;
 import com.rbkmoney.shumpune.domain.BalanceModel;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -12,11 +13,11 @@ public class BalanceModelMapper implements RowMapper<BalanceModel> {
 
     @Override
     public BalanceModel mapRow(ResultSet rs, int i) throws SQLException {
-        long id = rs.getLong("id");
-        long ownAmount = rs.getLong("own_amount");
-        long maxAmount = rs.getLong("max_available_amount");
-        long minAmount = rs.getLong("min_available_amount");
-        long clock = rs.getLong("CLOCK");
+        long id = rs.getLong(AccountLogFields.ID);
+        long ownAmount = rs.getLong(AccountLogFields.OWN_AMOUNT);
+        long maxAmount = rs.getLong(AccountLogFields.MAX_AVAILABLE_AMOUNT);
+        long minAmount = rs.getLong(AccountLogFields.MIN_AVAILABLE_AMOUNT);
+        long clock = rs.getLong(AccountLogFields.CLOCK);
         return BalanceModel.builder()
                 .accountId(id)
                 .ownAmount(ownAmount)

@@ -94,9 +94,8 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
                         "where id = :id";
         MapSqlParameterSource params = new MapSqlParameterSource("id", id);
         try {
-            List<Account> accounts = getNamedParameterJdbcTemplate()
-                    .query(sql, params, accountMapper);
-            if (accounts == null || accounts.isEmpty()) {
+            List<Account> accounts = getNamedParameterJdbcTemplate().query(sql, params, accountMapper);
+            if (accounts.isEmpty()) {
                 return Optional.empty();
             }
             return Optional.ofNullable(accounts.get(0));

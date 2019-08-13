@@ -1,5 +1,9 @@
 package com.rbkmoney.shumpune.constant;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PostingLogFields {
 
     public static final String PLAN_ID = "plan_id";
