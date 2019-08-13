@@ -15,7 +15,6 @@ import com.rbkmoney.shumpune.domain.PostingPlanInfo;
 import com.rbkmoney.shumpune.domain.PostingPlanModel;
 import com.rbkmoney.shumpune.utils.VectorClockSerializer;
 import com.rbkmoney.shumpune.validator.FinalOpValidator;
-import com.rbkmoney.shumpune.validator.HoldPlanValidator;
 import com.rbkmoney.shumpune.validator.PostingBatchValidator;
 import com.rbkmoney.shumpune.validator.PostingsUpdateValidator;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +33,6 @@ public class PostingPlanService {
 
     private final PostingPlanToPostingPlanModelConverter converter;
     private final PlanDaoImpl planDao;
-    private final HoldPlanValidator holdPlanValidator;
     private final FinalOpValidator finalOpValidator;
     private final PostingBatchValidator postingBatchValidator;
     private final PostingPlanToPostingPlanInfoConverter postingPlanToPostingPlanInfoConverter;
@@ -43,8 +41,7 @@ public class PostingPlanService {
 
     @Transactional
     public Clock hold(PostingPlanChange postingPlanChange) throws TException {
-        holdPlanValidator.validate(postingPlanChange);
-        postingBatchValidator.validate(postingPlanChange.getBatch());
+        postingBatchValidator.validate(postingPlanChange.getBatch(), postingPlanChange.getId());
 
         PostingPlanModel postingPlanModel = converter.convert(postingPlanChange);
 
@@ -68,7 +65,7 @@ public class PostingPlanService {
     private Clock finalOperation(PostingPlan postingPlan, PostingOperation postingOperation) throws TException {
         finalOpValidator.validate(postingPlan);
         for (PostingBatch postingBatch : postingPlan.getBatchList()) {
-            postingBatchValidator.validate(postingBatch);
+            postingBatchValidator.validate(postingBatch, postingPlan.getId());
         }
 
         PostingPlanInfo oldPostingPlanInfo = planDao.selectForUpdatePlanLog(postingPlan.getId());
@@ -79,9 +76,11 @@ public class PostingPlanService {
         Map<Long, List<PostingModel>> postingLogs = planDao.getPostingLogs(oldPostingPlanInfo.getId(), oldPostingPlanInfo.getPostingOperation());
         postingsUpdateValidator.validate(postingPlan, postingLogs);
 
-        long clock = planDao.insertPostings(postingPlanToListPostingModelListConverter.convert(postingPlan).stream()
+        long clock = planDao.insertPostings(
+                postingPlanToListPostingModelListConverter.convert(postingPlan).stream()
                 .peek(p -> p.setOperation(postingOperation))
-                .collect(Collectors.toList()));
+                        .collect(Collectors.toList())
+        );
 
         PostingPlanInfo newPostingPlanInfo = postingPlanToPostingPlanInfoConverter.convert(postingPlan);
         newPostingPlanInfo.setClock(clock);
