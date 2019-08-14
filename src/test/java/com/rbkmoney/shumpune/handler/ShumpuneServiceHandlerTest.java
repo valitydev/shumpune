@@ -133,6 +133,16 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
 
         checkMinAvailable(providerAcc, -294000L, merchantAcc, 291000L, systemAcc, 3000L, clock);
         checkOwnAcc(providerAcc, -294000L, merchantAcc, 291000L, systemAcc, 3000L, clock);
+
+        PostingPlan plan = handler.getPlan(planCommit);
+
+        Assert.assertEquals(planCommit, plan.getId());
+        Assert.assertFalse(plan.getBatchList().isEmpty());
+        plan.getBatchList()
+                .forEach(postingBatch -> {
+                    Assert.assertEquals(PostingGenerator.BATCH_ID, postingBatch.getId());
+                    Assert.assertEquals(6L, postingBatch.getPostings().size());
+                });
     }
 
     private void checkOwnAcc(long providerAcc, long providerSum, long merchantAcc, long merchantSum,
