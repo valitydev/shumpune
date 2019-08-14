@@ -157,15 +157,15 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         long merchantAcc = handler.createAccount(accountPrototype);
         long systemAcc = handler.createAccount(accountPrototype);
 
-        String planRollbak = "planRollbak";
-        PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(planRollbak, providerAcc, systemAcc, merchantAcc);
+        String planRollbaсk = "planRollbaсk";
+        PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(planRollbaсk, providerAcc, systemAcc, merchantAcc);
         handler.hold(postingPlanChange);
 
         PostingBatch batch = PostingGenerator.createBatch(providerAcc, systemAcc, merchantAcc);
         ArrayList<PostingBatch> batchList = new ArrayList<>();
         batchList.add(batch);
         PostingPlan postingPlan = new PostingPlan()
-                .setId(planRollbak)
+                .setId(planRollbaсk)
                 .setBatchList(batchList);
 
         Clock clock = handler.rollbackPlan(postingPlan);
