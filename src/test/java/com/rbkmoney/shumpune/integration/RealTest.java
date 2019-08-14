@@ -54,8 +54,9 @@ public class RealTest extends DaoTestBase {
         Scanner scanner = new Scanner(new ClassPathResource("data/postings.csv").getFile());
         scanner.nextLine(); // header
         while (scanner.hasNextLine()) {
-            ops.add(parsePostingPlanInfo(scanner.nextLine()));
-            System.out.println(scanner.nextLine());
+            Map.Entry<PostingOperation, PostingPlanChange> e = parsePostingPlanInfo(scanner.nextLine());
+            ops.add(e);
+            System.out.println(e);
         }
         scanner.close();
 
@@ -67,9 +68,6 @@ public class RealTest extends DaoTestBase {
                 .flatMap(entry -> entry.getValue().getBatch().getPostings().stream())
                 .flatMap(posting -> Stream.of(posting.getToId(), posting.getFromId()))
                 .collect(Collectors.toList());
-
-        Map<String, PostingOperation> postingPlanIdsWithOperations = ops.stream()
-                .collect(Collectors.toMap(entry -> entry.getValue().getId(), Map.Entry::getKey, (o, o2) -> o));
 
 
         holds = ops.stream()
@@ -127,7 +125,6 @@ public class RealTest extends DaoTestBase {
 
     private Map.Entry<PostingOperation, PostingPlanChange> parsePostingPlanInfo(String nextLine) {
         String[] strings = nextLine.split(",");
-        //id,plan_id,batch_id,from_account_id,to_account_id,operation,amount,creation_time,curr_sym_code,description
         String id = strings[0];
         String plan_id = strings[1];
         Long batch_id = Long.parseLong(strings[2]);
