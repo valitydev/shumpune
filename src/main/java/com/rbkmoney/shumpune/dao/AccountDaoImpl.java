@@ -82,7 +82,6 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
                 throw new DaoException(e);
             }
         }
-
         return null;
     }
 

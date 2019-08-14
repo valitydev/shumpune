@@ -177,6 +177,7 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
     @Override
     public PostingPlanModel getPostingPlanById(String planId) {
         try {
+            //TODO implementation
             return null;
         } catch (EmptyResultDataAccessException e) {
             return null;
