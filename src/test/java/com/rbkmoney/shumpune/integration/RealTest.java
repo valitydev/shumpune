@@ -121,6 +121,7 @@ public class RealTest extends DaoTestBase {
                 log.error("rollback unsuccessful: {}", rollback);
             }
         });
+        //todo getPlan or getBalanceById после каждой операции?
     }
 
     private Map.Entry<PostingOperation, PostingPlanChange> parsePostingPlanInfo(String nextLine) {
