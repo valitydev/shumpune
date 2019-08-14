@@ -13,10 +13,12 @@ import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 
 public class PostingGenerator {
 
+    public static final long BATCH_ID = 1L;
+
     @NotNull
     public static PostingBatch createBatch(Long providerAcc, Long systemAcc, Long merchantAcc) {
         PostingBatch batch = new PostingBatch();
-        batch.setId(1L);
+        batch.setId(BATCH_ID);
         ArrayList<Posting> postings = new ArrayList<>();
         postings.add(new Posting()
                 .setCurrencySymCode("RUB")

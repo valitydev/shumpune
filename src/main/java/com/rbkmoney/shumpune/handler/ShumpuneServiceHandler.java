@@ -2,10 +2,11 @@ package com.rbkmoney.shumpune.handler;
 
 import com.rbkmoney.damsel.shumpune.*;
 import com.rbkmoney.shumpune.converter.BalanceModelToBalanceConverter;
+import com.rbkmoney.shumpune.converter.PostingModelToPostingBatchConverter;
 import com.rbkmoney.shumpune.dao.AccountDao;
 import com.rbkmoney.shumpune.dao.PlanDao;
 import com.rbkmoney.shumpune.domain.BalanceModel;
-import com.rbkmoney.shumpune.domain.PostingPlanModel;
+import com.rbkmoney.shumpune.domain.PostingModel;
 import com.rbkmoney.shumpune.exception.DaoException;
 import com.rbkmoney.shumpune.service.PostingPlanService;
 import com.rbkmoney.shumpune.utils.VectorClockSerializer;
@@ -15,6 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -23,6 +29,7 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
     private final AccountDao accountDao;
     private final PlanDao planDao;
     private final BalanceModelToBalanceConverter balanceModelToBalanceConverter;
+    private final PostingModelToPostingBatchConverter postingModelToPostingBatchConverter;
     private final PostingPlanService postingPlanService;
 
     @Override
@@ -69,11 +76,22 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
 
     @Override
     public PostingPlan getPlan(String planId) throws PlanNotFound, TException {
-        log.info("Start getPlan PLAN_ID: {}", planId);
+        log.info("Start getPlan planId: {}", planId);
         try {
-            PostingPlanModel postingPlanModel = planDao.getPostingPlanById(planId);
-            log.info("Finish getPlan accountId: {}", postingPlanModel);
-            return null;
+            List<PostingModel> postingModelsPlanById = planDao.getPostingModelsPlanById(planId);
+            Map<Long, List<PostingModel>> collect = postingModelsPlanById.stream()
+                    .collect(Collectors.groupingBy(o -> o.getBatchId()));
+            List<PostingBatch> postingBatches = collect.entrySet().stream()
+                    .map(entry -> {
+                                PostingBatch postingBatch = postingModelToPostingBatchConverter.convert(entry.getValue());
+                                return postingBatch.setId(entry.getKey());
+                            }
+                    ).collect(Collectors.toList());
+            PostingPlan postingPlan = new PostingPlan()
+                    .setId(planId)
+                    .setBatchList(postingBatches);
+            log.info("Finish getPlan postingPlan: {}", postingPlan);
+            return postingPlan;
         } catch (DaoException e) {
             log.error("Failed to getPlan e: ", e);
             throw new WUnavailableResultException(e);

@@ -164,7 +164,6 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
         final String sql = "update shm.plan_log set clock=:clock, last_operation=:last_operation::shm.posting_operation_type, last_batch_id=:last_batch_id  where plan_id=:plan_id and shm.plan_log.last_operation in (:overridable_operation::shm.posting_operation_type, :same_operation::shm.posting_operation_type) returning *";
         MapSqlParameterSource params = createParams(postingPlanInfo);
         params.addValue("same_operation", postingPlanInfo.getPostingOperation().name());
-
         try {
             return getNamedParameterJdbcTemplate().queryForObject(sql, params, planRowMapper);
         } catch (EmptyResultDataAccessException e) {
@@ -175,10 +174,15 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
     }
 
     @Override
-    public PostingPlanModel getPostingPlanById(String planId) {
+    public List<PostingModel> getPostingModelsPlanById(String planId) {
+        final String sql = "select plan_id, batch_id, from_account_id, to_account_id, operation, " +
+                "amount, creation_time, curr_sym_code, description " +
+                "from shm.posting_log " +
+                "where plan_id=:plan_id for update";
+        MapSqlParameterSource params = new MapSqlParameterSource(PlanLogFields.PLAN_ID, planId);
         try {
-            //TODO implementation
-            return null;
+            return getNamedParameterJdbcTemplate()
+                    .query(sql, params, postingModelMapper);
         } catch (EmptyResultDataAccessException e) {
             return null;
         } catch (NestedRuntimeException e) {
