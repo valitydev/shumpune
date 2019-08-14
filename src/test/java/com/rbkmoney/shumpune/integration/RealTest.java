@@ -72,21 +72,28 @@ public class RealTest extends DaoTestBase {
                 .collect(Collectors.toMap(entry -> entry.getValue().getId(), Map.Entry::getKey, (o, o2) -> o));
 
 
-        List<PostingPlanChange> postingPlanChanges = ops.stream()
+        holds = ops.stream()
+                .filter(entry -> entry.getKey().equals(PostingOperation.HOLD))
                 .map(Map.Entry::getValue)
                 .collect(Collectors.collectingAndThen(
                         Collectors.toMap(PostingPlanChange::getId, o -> o.getBatch().getPostings(), (postings, postings2) -> Lists.newArrayList(Iterables.concat(postings, postings2))),
                         stringListMap -> stringListMap.entrySet().stream().map(o -> new PostingPlanChange(o.getKey(), new PostingBatch(1L, o.getValue()))).collect(Collectors.toList())));
 
-        holds = postingPlanChanges.stream()
-                .filter(postingPlanChange -> postingPlanIdsWithOperations.get(postingPlanChange.getId()).equals(PostingOperation.HOLD))
-                .collect(Collectors.toList());
-        commits = postingPlanChanges.stream()
-                .filter(postingPlanChange -> postingPlanIdsWithOperations.get(postingPlanChange.getId()).equals(PostingOperation.COMMIT))
-                .collect(Collectors.toList());
-        rollbacks = postingPlanChanges.stream()
-                .filter(postingPlanChange -> postingPlanIdsWithOperations.get(postingPlanChange.getId()).equals(PostingOperation.ROLLBACK))
-                .collect(Collectors.toList());
+
+        commits = ops.stream()
+                .filter(entry -> entry.getKey().equals(PostingOperation.COMMIT))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(PostingPlanChange::getId, o -> o.getBatch().getPostings(), (postings, postings2) -> Lists.newArrayList(Iterables.concat(postings, postings2))),
+                        stringListMap -> stringListMap.entrySet().stream().map(o -> new PostingPlanChange(o.getKey(), new PostingBatch(1L, o.getValue()))).collect(Collectors.toList())));
+
+        rollbacks = ops.stream()
+                .filter(entry -> entry.getKey().equals(PostingOperation.ROLLBACK))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(PostingPlanChange::getId, o -> o.getBatch().getPostings(), (postings, postings2) -> Lists.newArrayList(Iterables.concat(postings, postings2))),
+                        stringListMap -> stringListMap.entrySet().stream().map(o -> new PostingPlanChange(o.getKey(), new PostingBatch(1L, o.getValue()))).collect(Collectors.toList())));
+
 
     }
 
