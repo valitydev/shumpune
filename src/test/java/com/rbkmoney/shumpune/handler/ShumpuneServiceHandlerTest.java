@@ -67,7 +67,7 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
                     return null;
                 });
 
-        checkMinAvailable(providerAcc, -294000L, merchantAcc, 291000L, systemAcc, 3000L, clock);
+        checkMinAvailable(providerAcc, -300000L, merchantAcc, -9000L, systemAcc, -6000L, clock);
     }
 
     private void checkMinAvailable(long providerAcc, long providerSum, long merchantAcc, long merchantSum,
