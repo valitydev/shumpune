@@ -54,8 +54,9 @@ public class RealTest extends DaoTestBase {
         Scanner scanner = new Scanner(new ClassPathResource("data/postings.csv").getFile());
         scanner.nextLine(); // header
         while (scanner.hasNextLine()) {
-            ops.add(parsePostingPlanInfo(scanner.nextLine()));
-            System.out.println(scanner.nextLine());
+            Map.Entry<PostingOperation, PostingPlanChange> e = parsePostingPlanInfo(scanner.nextLine());
+            ops.add(e);
+            System.out.println(e);
         }
         scanner.close();
 
@@ -68,25 +69,29 @@ public class RealTest extends DaoTestBase {
                 .flatMap(posting -> Stream.of(posting.getToId(), posting.getFromId()))
                 .collect(Collectors.toList());
 
-        Map<String, PostingOperation> postingPlanIdsWithOperations = ops.stream()
-                .collect(Collectors.toMap(entry -> entry.getValue().getId(), Map.Entry::getKey, (o, o2) -> o));
 
-
-        List<PostingPlanChange> postingPlanChanges = ops.stream()
+        holds = ops.stream()
+                .filter(entry -> entry.getKey().equals(PostingOperation.HOLD))
                 .map(Map.Entry::getValue)
                 .collect(Collectors.collectingAndThen(
                         Collectors.toMap(PostingPlanChange::getId, o -> o.getBatch().getPostings(), (postings, postings2) -> Lists.newArrayList(Iterables.concat(postings, postings2))),
                         stringListMap -> stringListMap.entrySet().stream().map(o -> new PostingPlanChange(o.getKey(), new PostingBatch(1L, o.getValue()))).collect(Collectors.toList())));
 
-        holds = postingPlanChanges.stream()
-                .filter(postingPlanChange -> postingPlanIdsWithOperations.get(postingPlanChange.getId()).equals(PostingOperation.HOLD))
-                .collect(Collectors.toList());
-        commits = postingPlanChanges.stream()
-                .filter(postingPlanChange -> postingPlanIdsWithOperations.get(postingPlanChange.getId()).equals(PostingOperation.COMMIT))
-                .collect(Collectors.toList());
-        rollbacks = postingPlanChanges.stream()
-                .filter(postingPlanChange -> postingPlanIdsWithOperations.get(postingPlanChange.getId()).equals(PostingOperation.ROLLBACK))
-                .collect(Collectors.toList());
+
+        commits = ops.stream()
+                .filter(entry -> entry.getKey().equals(PostingOperation.COMMIT))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(PostingPlanChange::getId, o -> o.getBatch().getPostings(), (postings, postings2) -> Lists.newArrayList(Iterables.concat(postings, postings2))),
+                        stringListMap -> stringListMap.entrySet().stream().map(o -> new PostingPlanChange(o.getKey(), new PostingBatch(1L, o.getValue()))).collect(Collectors.toList())));
+
+        rollbacks = ops.stream()
+                .filter(entry -> entry.getKey().equals(PostingOperation.ROLLBACK))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(PostingPlanChange::getId, o -> o.getBatch().getPostings(), (postings, postings2) -> Lists.newArrayList(Iterables.concat(postings, postings2))),
+                        stringListMap -> stringListMap.entrySet().stream().map(o -> new PostingPlanChange(o.getKey(), new PostingBatch(1L, o.getValue()))).collect(Collectors.toList())));
+
 
     }
 
@@ -116,11 +121,11 @@ public class RealTest extends DaoTestBase {
                 log.error("rollback unsuccessful: {}", rollback);
             }
         });
+        //todo getPlan or getBalanceById после каждой операции?
     }
 
     private Map.Entry<PostingOperation, PostingPlanChange> parsePostingPlanInfo(String nextLine) {
         String[] strings = nextLine.split(",");
-        //id,plan_id,batch_id,from_account_id,to_account_id,operation,amount,creation_time,curr_sym_code,description
         String id = strings[0];
         String plan_id = strings[1];
         Long batch_id = Long.parseLong(strings[2]);
