@@ -22,6 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = ShumpuneApplication.class)
@@ -157,6 +158,32 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         Assert.assertEquals(systemSum, balanceSystemOwn.getOwnAmount().longValue());
     }
 
+    private void checkAccs(long firstAcc, long firstAccOwnAmount, long firstAccMinAmount, long firstAccMaxAmount,
+                           long secondAcc, long secondAccOwnAmount, long secondAccMinAmount, long secondAccMaxAmount,
+                             long thirdAcc, long thirdAccOwnAmount, long thirdAccMinAmount, long thirdAccMaxAmount,
+                           long fourthAcc, long fourthAccOwnAmount, long fourthAccMinAmount, long fourthAccMaxAmount,
+                           Clock clock) {
+        BalanceModel balanceFirstOwn = planDao.getBalance(firstAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(firstAccOwnAmount, balanceFirstOwn.getOwnAmount().longValue());
+        Assert.assertEquals(firstAccMinAmount, balanceFirstOwn.getMinAvailableAmount().longValue());
+        Assert.assertEquals(firstAccMaxAmount, balanceFirstOwn.getMaxAvailableAmount().longValue());
+
+        BalanceModel balanceSecondOwn = planDao.getBalance(secondAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(secondAccOwnAmount, balanceSecondOwn.getOwnAmount().longValue());
+        Assert.assertEquals(secondAccMinAmount, balanceSecondOwn.getMinAvailableAmount().longValue());
+        Assert.assertEquals(secondAccMaxAmount, balanceSecondOwn.getMaxAvailableAmount().longValue());
+
+        BalanceModel balanceThirdOwn = planDao.getBalance(thirdAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(thirdAccOwnAmount, balanceThirdOwn.getOwnAmount().longValue());
+        Assert.assertEquals(thirdAccMinAmount, balanceThirdOwn.getMinAvailableAmount().longValue());
+        Assert.assertEquals(thirdAccMaxAmount, balanceThirdOwn.getMaxAvailableAmount().longValue());
+
+        BalanceModel balanceFourthOwn = planDao.getBalance(fourthAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
+        Assert.assertEquals(fourthAccOwnAmount, balanceFourthOwn.getOwnAmount().longValue());
+        Assert.assertEquals(fourthAccMinAmount, balanceFourthOwn.getMinAvailableAmount().longValue());
+        Assert.assertEquals(fourthAccMaxAmount, balanceFourthOwn.getMaxAvailableAmount().longValue());
+    }
+
     @Test
     public void rollback() throws TException {
         Instant now = Instant.now();
@@ -207,6 +234,58 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         account = handler.getAccountByID(accountId);
         assertAccount(account, accountPrototype);
         Assert.assertTrue(TypeUtil.stringToInstant(account.getCreationTime()).isAfter(now));
+    }
+
+    @Test
+    public void getBalanceCorrectForm() throws TException {
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(now);
+        long firstAcc = handler.createAccount(accountPrototype);
+        long secondAcc = handler.createAccount(accountPrototype);
+        long thirdAcc = handler.createAccount(accountPrototype);
+        long fourthAcc = handler.createAccount(accountPrototype);
+
+        PostingPlanChange postingPlanChange1 = PostingGenerator.createPostingPlanChange("1", firstAcc, secondAcc, thirdAcc, fourthAcc, 1);
+        PostingPlanChange postingPlanChange2 = PostingGenerator.createPostingPlanChange("2", firstAcc, secondAcc, thirdAcc, fourthAcc, 3);
+        PostingPlanChange postingPlanChange3 = PostingGenerator.createPostingPlanChange("3", firstAcc, secondAcc, thirdAcc, fourthAcc, 21);
+        Clock clock = handler.hold(postingPlanChange1);
+        checkAccs(firstAcc, 0, -6800, 80000,
+                secondAcc, 0,  -1760, 2800,
+                thirdAcc, 0, 0, 4000,
+                fourthAcc, 0, -80000, 1760,
+                clock);
+        clock = handler.hold(postingPlanChange2);
+        checkAccs(firstAcc, 0, -27200, 320000,
+                secondAcc, 0,  -7040, 11200,
+                thirdAcc, 0, 0, 16000,
+                fourthAcc, 0, -320000, 7040,
+                clock);
+        clock = handler.hold(postingPlanChange3);
+        checkAccs(firstAcc, 0, -170000, 2000000,
+                secondAcc, 0,  -44000, 70000,
+                thirdAcc, 0, 0, 100000,
+                fourthAcc, 0, -2000000, 44000,
+                clock);
+        clock = handler.commitPlan(new PostingPlan("1", List.of(postingPlanChange1.getBatch())));
+        checkAccs(firstAcc, 73200, -90000, 1993200,
+                secondAcc, 1040,  -41200, 68240,
+                thirdAcc, 4000, 4000, 100000,
+                fourthAcc, -78240, -1998240, -36000,
+                clock);
+        clock = handler.commitPlan(new PostingPlan("2", List.of(postingPlanChange2.getBatch())));
+        checkAccs(firstAcc, 292800, 150000, 1972800,
+                secondAcc, 4160,  -32800, 62960,
+                thirdAcc, 16000, 16000, 100000,
+                fourthAcc, -312960, -1992960, -276000,
+                clock);
+        clock = handler.rollbackPlan(new PostingPlan("3", List.of(postingPlanChange3.getBatch())));
+        checkAccs(firstAcc, 2928000, 2928000,2928000,
+                secondAcc, 4160, 4160,4160,
+                thirdAcc, 16000, 16000,16000,
+                fourthAcc, -312960, -312960,-312960,
+                clock);
     }
 
     private void assertAccount(Account account, AccountPrototype accountPrototype) {
