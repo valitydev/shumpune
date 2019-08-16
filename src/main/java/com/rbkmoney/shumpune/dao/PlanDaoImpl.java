@@ -139,8 +139,8 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
                 .ownAmount(safeGetSum(sumMapTo, PostingOperation.COMMIT) - safeGetSum(sumMapFrom, PostingOperation.COMMIT))
                 .minAvailableAmount(safeGetSum(sumMapTo, PostingOperation.COMMIT) -
                         (safeGetSum(sumMapFrom, PostingOperation.HOLD) - safeGetSum(sumMapFrom, PostingOperation.ROLLBACK)))
-                .maxAvailableAmount(safeGetSum(sumMapFrom, PostingOperation.COMMIT) -
-                        (safeGetSum(sumMapTo, PostingOperation.HOLD) - safeGetSum(sumMapTo, PostingOperation.ROLLBACK)))
+                .maxAvailableAmount((safeGetSum(sumMapTo, PostingOperation.HOLD) - safeGetSum(sumMapTo, PostingOperation.ROLLBACK))
+                        - safeGetSum(sumMapFrom, PostingOperation.COMMIT))
                 .build();
     }
 

@@ -281,7 +281,7 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
                 fourthAcc, -312960, -1992960, -276000,
                 clock);
         clock = handler.rollbackPlan(new PostingPlan("3", List.of(postingPlanChange3.getBatch())));
-        checkAccs(firstAcc, 2928000, 2928000,2928000,
+        checkAccs(firstAcc, 292800, 292800,292800,
                 secondAcc, 4160, 4160,4160,
                 thirdAcc, 16000, 16000,16000,
                 fourthAcc, -312960, -312960,-312960,
