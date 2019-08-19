@@ -9,7 +9,9 @@ import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.converter.PostingPlanToListPostingModelListConverter;
 import com.rbkmoney.shumpune.converter.PostingPlanToPostingPlanInfoConverter;
 import com.rbkmoney.shumpune.converter.PostingPlanToPostingPlanModelConverter;
+import com.rbkmoney.shumpune.dao.AccountDao;
 import com.rbkmoney.shumpune.dao.PlanDaoImpl;
+import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.domain.PostingModel;
 import com.rbkmoney.shumpune.domain.PostingPlanInfo;
 import com.rbkmoney.shumpune.domain.PostingPlanModel;
@@ -33,6 +35,7 @@ public class PostingPlanService {
 
     private final PostingPlanToPostingPlanModelConverter converter;
     private final PlanDaoImpl planDao;
+    private final AccountDao accountDao;
     private final FinalOpValidator finalOpValidator;
     private final PostingBatchValidator postingBatchValidator;
     private final PostingPlanToPostingPlanInfoConverter postingPlanToPostingPlanInfoConverter;
@@ -60,6 +63,11 @@ public class PostingPlanService {
     @Transactional
     public Clock rollback(PostingPlan postingPlan) throws TException {
         return finalOperation(postingPlan, PostingOperation.ROLLBACK);
+    }
+
+    @Transactional
+    public BalanceModel getBalanceById(Long id, Long clock) throws TException {
+        return accountDao.getBalanceById(id, clock);
     }
 
     private Clock finalOperation(PostingPlan postingPlan, PostingOperation postingOperation) throws TException {
