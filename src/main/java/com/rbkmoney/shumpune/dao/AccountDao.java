@@ -10,7 +10,5 @@ public interface AccountDao {
 
     Long insert(AccountPrototype account);
 
-    BalanceModel getBalanceById(Long id, Long clock);
-
     Optional<Account> getAccountById(Long id);
 }

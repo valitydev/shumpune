@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -109,23 +108,19 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
             log.info("Finish createAccount accountId: {}", account);
             return account;
         } catch (DaoException e) {
-            log.error("Failed to create account", e);
+            log.error("Failed to getAccountById e: ", e);
             throw new WUnavailableResultException(e);
         } catch (Exception e) {
-            log.error("Failed to create account", e);
+            log.error("Failed to getAccountById e: ", e);
             throw new TException(e);
         }
     }
 
     @Override
     public Balance getBalanceByID(long accountId, Clock clock) throws AccountNotFound, ClockInFuture, TException {
-        log.info("Start getBalanceByID accountId: {} CLOCK: {}", accountId, clock);
+        log.info("Start getBalanceByID accountId: {} clock: {}", accountId, clock);
         try {
-            Long clockValue = null;
-            if (clock.isSetVector()) {
-                clockValue = VectorClockSerializer.deserialize(clock.getVector());
-            }
-            BalanceModel balance = accountDao.getBalanceById(accountId, clockValue);
+            BalanceModel balance = postingPlanService.getBalanceById(accountId, clock);
             log.info("Finish getBalanceByID balance: {}", balance);
             return balanceModelToBalanceConverter.convert(balance);
         } catch (DaoException e) {
@@ -145,10 +140,10 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
             log.info("Finish createAccount accountId: {}", accountId);
             return accountId;
         } catch (DaoException e) {
-            log.error("Failed to create account", e);
+            log.error("Failed to create account e: ", e);
             throw new WUnavailableResultException(e);
         } catch (Exception e) {
-            log.error("Failed to create account", e);
+            log.error("Failed to create account e: ", e);
             throw new TException(e);
         }
     }

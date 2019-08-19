@@ -4,11 +4,8 @@ import com.rbkmoney.damsel.shumpune.Account;
 import com.rbkmoney.damsel.shumpune.AccountPrototype;
 import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.shumpune.dao.mapper.AccountMapper;
-import com.rbkmoney.shumpune.dao.mapper.BalanceModelMapper;
-import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.exception.DaoException;
 import org.springframework.core.NestedRuntimeException;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -25,12 +22,10 @@ import java.util.Optional;
 @Service
 public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements AccountDao {
 
-    private final RowMapper<BalanceModel> balanceRowMapper;
     private final AccountMapper accountMapper;
 
-    public AccountDaoImpl(DataSource ds, BalanceModelMapper balanceModelMapper, AccountMapper accountMapper) {
+    public AccountDaoImpl(DataSource ds, AccountMapper accountMapper) {
         setDataSource(ds);
-        this.balanceRowMapper = balanceModelMapper;
         this.accountMapper = accountMapper;
     }
 
@@ -56,33 +51,6 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
         }
     }
 
-    private LocalDateTime getInstant(AccountPrototype prototype) {
-        return toLocalDateTime(prototype.isSetCreationTime() ? TypeUtil.stringToInstant(prototype.getCreationTime()) : Instant.now());
-    }
-
-    private LocalDateTime toLocalDateTime(Instant instant) {
-        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
-    }
-
-    @Override
-    public BalanceModel getBalanceById(Long id, Long clock) {
-            MapSqlParameterSource params = new MapSqlParameterSource("accId", id);
-            final String sql =
-                    "select id, own_amount, max_available_amount, min_available_amount, max(clock) " +
-                    "from shm.account_log " +
-                    "where account_id = :accId";
-            try {
-                BalanceModel balanceModel = getNamedParameterJdbcTemplate()
-                        .queryForObject(sql, params, balanceRowMapper);
-                if (balanceModel != null && balanceModel.getClock() >= clock) {
-                    return balanceModel;
-                }
-                return null;
-            } catch (NestedRuntimeException e) {
-                throw new DaoException(e);
-            }
-    }
-
     @Override
     public Optional<Account> getAccountById(Long id) {
         final String sql =
@@ -101,4 +69,11 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
         }
     }
 
+    private LocalDateTime getInstant(AccountPrototype prototype) {
+        return toLocalDateTime(prototype.isSetCreationTime() ? TypeUtil.stringToInstant(prototype.getCreationTime()) : Instant.now());
+    }
+
+    private LocalDateTime toLocalDateTime(Instant instant) {
+        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+    }
 }

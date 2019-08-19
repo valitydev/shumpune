@@ -160,28 +160,28 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
 
     private void checkAccs(long firstAcc, long firstAccOwnAmount, long firstAccMinAmount, long firstAccMaxAmount,
                            long secondAcc, long secondAccOwnAmount, long secondAccMinAmount, long secondAccMaxAmount,
-                             long thirdAcc, long thirdAccOwnAmount, long thirdAccMinAmount, long thirdAccMaxAmount,
+                           long thirdAcc, long thirdAccOwnAmount, long thirdAccMinAmount, long thirdAccMaxAmount,
                            long fourthAcc, long fourthAccOwnAmount, long fourthAccMinAmount, long fourthAccMaxAmount,
-                           Clock clock) {
-        BalanceModel balanceFirstOwn = planDao.getBalance(firstAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
-        Assert.assertEquals(firstAccOwnAmount, balanceFirstOwn.getOwnAmount().longValue());
-        Assert.assertEquals(firstAccMinAmount, balanceFirstOwn.getMinAvailableAmount().longValue());
-        Assert.assertEquals(firstAccMaxAmount, balanceFirstOwn.getMaxAvailableAmount().longValue());
+                           Clock clock) throws TException {
+        Balance balanceByID = handler.getBalanceByID(firstAcc, clock);
+        Assert.assertEquals(firstAccOwnAmount, balanceByID.getOwnAmount());
+        Assert.assertEquals(firstAccMinAmount, balanceByID.getMinAvailableAmount());
+        Assert.assertEquals(firstAccMaxAmount, balanceByID.getMaxAvailableAmount());
 
-        BalanceModel balanceSecondOwn = planDao.getBalance(secondAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
-        Assert.assertEquals(secondAccOwnAmount, balanceSecondOwn.getOwnAmount().longValue());
-        Assert.assertEquals(secondAccMinAmount, balanceSecondOwn.getMinAvailableAmount().longValue());
-        Assert.assertEquals(secondAccMaxAmount, balanceSecondOwn.getMaxAvailableAmount().longValue());
+        Balance balanceSecondOwn = handler.getBalanceByID(secondAcc, clock);
+        Assert.assertEquals(secondAccOwnAmount, balanceSecondOwn.getOwnAmount());
+        Assert.assertEquals(secondAccMinAmount, balanceSecondOwn.getMinAvailableAmount());
+        Assert.assertEquals(secondAccMaxAmount, balanceSecondOwn.getMaxAvailableAmount());
 
-        BalanceModel balanceThirdOwn = planDao.getBalance(thirdAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
-        Assert.assertEquals(thirdAccOwnAmount, balanceThirdOwn.getOwnAmount().longValue());
-        Assert.assertEquals(thirdAccMinAmount, balanceThirdOwn.getMinAvailableAmount().longValue());
-        Assert.assertEquals(thirdAccMaxAmount, balanceThirdOwn.getMaxAvailableAmount().longValue());
+        Balance balanceThirdOwn = handler.getBalanceByID(thirdAcc, clock);
+        Assert.assertEquals(thirdAccOwnAmount, balanceThirdOwn.getOwnAmount());
+        Assert.assertEquals(thirdAccMinAmount, balanceThirdOwn.getMinAvailableAmount());
+        Assert.assertEquals(thirdAccMaxAmount, balanceThirdOwn.getMaxAvailableAmount());
 
-        BalanceModel balanceFourthOwn = planDao.getBalance(fourthAcc, 0L, VectorClockSerializer.deserialize(clock.getVector()));
-        Assert.assertEquals(fourthAccOwnAmount, balanceFourthOwn.getOwnAmount().longValue());
-        Assert.assertEquals(fourthAccMinAmount, balanceFourthOwn.getMinAvailableAmount().longValue());
-        Assert.assertEquals(fourthAccMaxAmount, balanceFourthOwn.getMaxAvailableAmount().longValue());
+        Balance balanceFourthOwn = handler.getBalanceByID(fourthAcc, clock);
+        Assert.assertEquals(fourthAccOwnAmount, balanceFourthOwn.getOwnAmount());
+        Assert.assertEquals(fourthAccMinAmount, balanceFourthOwn.getMinAvailableAmount());
+        Assert.assertEquals(fourthAccMaxAmount, balanceFourthOwn.getMaxAvailableAmount());
     }
 
     @Test
@@ -256,6 +256,7 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
                 thirdAcc, 0, 0, 4000,
                 fourthAcc, 0, -80000, 1760,
                 clock);
+
         clock = handler.hold(postingPlanChange2);
         checkAccs(firstAcc, 0, -27200, 320000,
                 secondAcc, 0,  -7040, 11200,
@@ -274,6 +275,7 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
                 thirdAcc, 4000, 4000, 100000,
                 fourthAcc, -78240, -1998240, -36000,
                 clock);
+
         clock = handler.commitPlan(new PostingPlan("2", List.of(postingPlanChange2.getBatch())));
         checkAccs(firstAcc, 292800, 150000, 1972800,
                 secondAcc, 4160,  -32800, 62960,
@@ -286,6 +288,11 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
                 thirdAcc, 16000, 16000,16000,
                 fourthAcc, -312960, -312960,-312960,
                 clock);
+
+        Balance balance = handler.getBalanceByID(firstAcc, Clock.latest(new LatestClock()));
+        Balance balanceSecond = handler.getBalanceByID(firstAcc, Clock.latest(new LatestClock()));
+
+        Assert.assertEquals(balance.getClock(), balanceSecond.getClock());
     }
 
     private void assertAccount(Account account, AccountPrototype accountPrototype) {

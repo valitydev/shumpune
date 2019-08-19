@@ -17,10 +17,7 @@ OIDS=FALSE
 CREATE TABLE shm.account_log
 (
   id bigserial NOT NULL,
-  plan_id character varying(64) NOT NULL,
-  batch_id bigint NOT NULL,
   account_id bigint NOT NULL,
-  operation shm.posting_operation_type NOT NULL,
   own_amount BIGINT NULL DEFAULT 0,
   max_available_amount BIGINT NULL DEFAULT 0,
   min_available_amount BIGINT NULL DEFAULT 0,

@@ -207,6 +207,17 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
         return getNamedParameterJdbcTemplate().queryForObject(sqlGetClock, params, Long.class);
     }
 
+    @Override
+    public long getMaxClockByAccountId(Long id) {
+        MapSqlParameterSource params = new MapSqlParameterSource("accId", id);
+
+        String sqlGetClock = "select max(id) as clock " +
+                "from shm.posting_log " +
+                "where from_account_id = :accId or to_account_id= :accId";
+
+        return getNamedParameterJdbcTemplate().queryForObject(sqlGetClock, params, Long.class);
+    }
+
     private void checkBatchUpdate(int[][] updateCounts) {
         boolean checked = false;
         for (int[] updateCount : updateCounts) {

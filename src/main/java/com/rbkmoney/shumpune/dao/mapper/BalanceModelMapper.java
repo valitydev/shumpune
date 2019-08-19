@@ -13,13 +13,13 @@ public class BalanceModelMapper implements RowMapper<BalanceModel> {
 
     @Override
     public BalanceModel mapRow(ResultSet rs, int i) throws SQLException {
-        long id = rs.getLong(AccountLogFields.ID);
+        long accountId = rs.getLong(AccountLogFields.ACCOUNT_ID);
         long ownAmount = rs.getLong(AccountLogFields.OWN_AMOUNT);
         long maxAmount = rs.getLong(AccountLogFields.MAX_AVAILABLE_AMOUNT);
         long minAmount = rs.getLong(AccountLogFields.MIN_AVAILABLE_AMOUNT);
         long clock = rs.getLong(AccountLogFields.CLOCK);
         return BalanceModel.builder()
-                .accountId(id)
+                .accountId(accountId)
                 .ownAmount(ownAmount)
                 .maxAvailableAmount(maxAmount)
                 .minAvailableAmount(minAmount)

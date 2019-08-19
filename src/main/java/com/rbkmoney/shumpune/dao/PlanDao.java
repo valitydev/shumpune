@@ -25,4 +25,5 @@ public interface PlanDao {
 
     Map<Long, List<PostingModel>> getPostingLogs(String planId, PostingOperation operation);
 
+    long getMaxClockByAccountId(Long id);
 }
