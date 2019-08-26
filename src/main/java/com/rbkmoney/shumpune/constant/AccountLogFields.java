@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class AccountLogFields {
+public final class AccountLogFields {
 
     public static final String ID = "id";
     public static final String ACCOUNT_ID = "account_id";

@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class AccountFields {
+public final class AccountFields {
 
     public static final String ID = "id";
     public static final String CURR_SYM_CODE = "curr_sym_code";
