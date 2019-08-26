@@ -20,7 +20,7 @@ public class PostingModelToPostingBatchConverter implements Converter<List<Posti
                                 .setAmount(postingModel.getAmount())
                                 .setCurrencySymCode(postingModel.getCurrencySymbCode())
                                 .setFromId(postingModel.getAccountFromId())
-                                .setToId(postingModel.getAccountFromId())
+                                .setToId(postingModel.getAccountToId())
                                 .setDescription(postingModel.getDescription()))
                         .collect(Collectors.toList()));
     }
