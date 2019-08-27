@@ -293,6 +293,10 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         Balance balanceSecond = handler.getBalanceByID(firstAcc, Clock.latest(new LatestClock()));
 
         Assert.assertEquals(balance.getClock(), balanceSecond.getClock());
+
+        Balance unknownAccount = handler.getBalanceByID(12321L, Clock.latest(new LatestClock()));
+
+        Assert.assertEquals(0L, unknownAccount.getOwnAmount());
     }
 
     private void assertAccount(Account account, AccountPrototype accountPrototype) {

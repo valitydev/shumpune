@@ -204,7 +204,7 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
                 "from shm.posting_log " +
                 "where plan_id = :planId and batch_id= :batchId";
 
-        return getNamedParameterJdbcTemplate().queryForObject(sqlGetClock, params, Long.class);
+        return queryForLong(params, sqlGetClock);
     }
 
     @Override
@@ -215,7 +215,13 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
                 "from shm.posting_log " +
                 "where from_account_id = :accId or to_account_id= :accId";
 
-        return getNamedParameterJdbcTemplate().queryForObject(sqlGetClock, params, Long.class);
+        return queryForLong(params, sqlGetClock);
+    }
+
+    private long queryForLong(MapSqlParameterSource params, String sqlGetClock) {
+        Long clock = getNamedParameterJdbcTemplate()
+                .queryForObject(sqlGetClock, params, Long.class);
+        return clock != null ? clock : 0L;
     }
 
     private void checkBatchUpdate(int[][] updateCounts) {
