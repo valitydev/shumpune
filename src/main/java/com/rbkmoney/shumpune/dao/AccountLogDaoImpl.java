@@ -1,6 +1,5 @@
 package com.rbkmoney.shumpune.dao;
 
-import com.rbkmoney.shumpune.dao.mapper.AccountMapper;
 import com.rbkmoney.shumpune.dao.mapper.BalanceModelMapper;
 import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.exception.DaoException;
@@ -23,7 +22,7 @@ public class AccountLogDaoImpl extends NamedParameterJdbcDaoSupport implements A
 
     private final RowMapper<BalanceModel> balanceRowMapper;
 
-    public AccountLogDaoImpl(DataSource ds, BalanceModelMapper balanceModelMapper, AccountMapper accountMapper) {
+    public AccountLogDaoImpl(DataSource ds, BalanceModelMapper balanceModelMapper) {
         setDataSource(ds);
         this.balanceRowMapper = balanceModelMapper;
     }
