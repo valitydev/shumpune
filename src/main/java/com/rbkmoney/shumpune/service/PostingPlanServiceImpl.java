@@ -9,7 +9,6 @@ import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.converter.PostingPlanToListPostingModelListConverter;
 import com.rbkmoney.shumpune.converter.PostingPlanToPostingPlanInfoConverter;
 import com.rbkmoney.shumpune.converter.PostingPlanToPostingPlanModelConverter;
-import com.rbkmoney.shumpune.dao.AccountDao;
 import com.rbkmoney.shumpune.dao.AccountLogDao;
 import com.rbkmoney.shumpune.dao.PlanDaoImpl;
 import com.rbkmoney.shumpune.domain.BalanceModel;
@@ -36,9 +35,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PostingPlanServiceImpl implements PostingPlanService {
 
-    private final PostingPlanToPostingPlanModelConverter converter;
+    private final PostingPlanToPostingPlanModelConverter postingPlanToPostingPlanModelConverter;
     private final PlanDaoImpl planDao;
-    private final AccountDao accountDao;
     private final AccountLogDao accountLogDao;
     private final FinalOpValidator finalOpValidator;
     private final PostingBatchValidator postingBatchValidator;
@@ -51,7 +49,7 @@ public class PostingPlanServiceImpl implements PostingPlanService {
     public Clock hold(PostingPlanChange postingPlanChange) throws TException {
         postingBatchValidator.validate(postingPlanChange.getBatch(), postingPlanChange.getId());
 
-        PostingPlanModel postingPlanModel = converter.convert(postingPlanChange);
+        PostingPlanModel postingPlanModel = postingPlanToPostingPlanModelConverter.convert(postingPlanChange);
 
         long clock = planDao.insertPostings(postingPlanModel.getPostingModels());
         postingPlanModel.getPostingPlanInfo().setClock(clock);
