@@ -9,7 +9,6 @@ import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.domain.PostingModel;
 import com.rbkmoney.shumpune.exception.DaoException;
 import com.rbkmoney.shumpune.service.PostingPlanService;
-import com.rbkmoney.shumpune.utils.VectorClockSerializer;
 import com.rbkmoney.woody.api.flow.error.WUnavailableResultException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -117,15 +116,12 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
     }
 
     @Override
-    public Balance getBalanceByID(long accountId, Clock clock) throws AccountNotFound, ClockInFuture, TException {
+    public Balance getBalanceByID(long accountId, Clock clock) throws TException {
         log.info("Start getBalanceByID accountId: {} clock: {}", accountId, clock);
         try {
             BalanceModel balance = postingPlanService.getBalanceById(accountId, clock);
             log.info("Finish getBalanceByID balance: {}", balance);
             return balanceModelToBalanceConverter.convert(balance);
-        } catch (DaoException e) {
-            log.error("Failed to getBalanceByID e: ", e);
-            throw new WUnavailableResultException(e);
         } catch (Exception e) {
             log.error("Failed to getBalanceByID e: ", e);
             throw new TException(e);

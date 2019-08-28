@@ -58,15 +58,9 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
                         "returning *";
 
         MapSqlParameterSource params = createParams(planLog.getPostingPlanInfo());
-        try {
-            PostingPlanInfo postingPlanInfo = getNamedParameterJdbcTemplate().queryForObject(sql, params, planRowMapper);
-            planLog.setPostingPlanInfo(postingPlanInfo);
-            return planLog;
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        } catch (NestedRuntimeException e) {
-            throw new DaoException(e);
-        }
+        PostingPlanInfo postingPlanInfo = getNamedParameterJdbcTemplate().queryForObject(sql, params, planRowMapper);
+        planLog.setPostingPlanInfo(postingPlanInfo);
+        return planLog;
     }
 
     private MapSqlParameterSource createParams(PostingPlanInfo planLog) {
@@ -163,7 +157,9 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
 
     @Override
     public PostingPlanInfo updatePlanLog(PostingPlanInfo postingPlanInfo) {
-        final String sql = "update shm.plan_log set clock=:clock, last_operation=:last_operation::shm.posting_operation_type, last_batch_id=:last_batch_id  where plan_id=:plan_id and shm.plan_log.last_operation in (:overridable_operation::shm.posting_operation_type, :same_operation::shm.posting_operation_type) returning *";
+        final String sql = "update shm.plan_log " +
+                "set clock=:clock, last_operation=:last_operation::shm.posting_operation_type, last_batch_id=:last_batch_id  " +
+                "where plan_id=:plan_id and shm.plan_log.last_operation in (:overridable_operation::shm.posting_operation_type, :same_operation::shm.posting_operation_type) returning *";
         MapSqlParameterSource params = createParams(postingPlanInfo);
         params.addValue("same_operation", postingPlanInfo.getPostingOperation().name());
         try {

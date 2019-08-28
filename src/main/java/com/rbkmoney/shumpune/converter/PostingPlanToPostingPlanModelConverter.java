@@ -5,24 +5,22 @@ import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.domain.PostingPlanInfo;
 import com.rbkmoney.shumpune.domain.PostingPlanModel;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class PostingPlanToPostingPlanModelConverter implements Converter<PostingPlanChange, PostingPlanModel> {
+public class PostingPlanToPostingPlanModelConverter {
 
     private final PostingPlanChangeToListPostingModelConverter planToListPostingModelConverter;
 
-    @Override
-    public PostingPlanModel convert(PostingPlanChange source) {
+    public PostingPlanModel convert(PostingPlanChange source, PostingOperation operation) {
         return PostingPlanModel.builder()
                 .postingPlanInfo(PostingPlanInfo.builder()
                         .id(source.id)
                         .batchId(source.batch.getId())
-                        .postingOperation(PostingOperation.HOLD)
+                        .postingOperation(operation)
                         .build())
-                .postingModels(planToListPostingModelConverter.convert(source))
+                .postingModels(planToListPostingModelConverter.convert(source, operation))
                 .build();
     }
 

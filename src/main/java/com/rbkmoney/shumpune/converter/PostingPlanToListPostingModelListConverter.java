@@ -3,7 +3,6 @@ package com.rbkmoney.shumpune.converter;
 import com.rbkmoney.damsel.shumpune.PostingPlan;
 import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.domain.PostingModel;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -11,10 +10,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class PostingPlanToListPostingModelListConverter implements Converter<PostingPlan, List<PostingModel>> {
+public class PostingPlanToListPostingModelListConverter {
 
-    @Override
-    public List<PostingModel> convert(PostingPlan source) {
+    public List<PostingModel> convert(PostingPlan source, PostingOperation operation) {
         return source.getBatchList()
                 .stream()
                 .flatMap(batch -> batch.getPostings().stream()
@@ -25,7 +23,7 @@ public class PostingPlanToListPostingModelListConverter implements Converter<Pos
                                 .batchId(batch.getId())
                                 .planId(source.id)
                                 .creationTime(Instant.now())
-                                .operation(PostingOperation.HOLD)
+                                .operation(operation)
                                 .currencySymbCode(posting.currency_sym_code)
                                 .description(posting.description)
                                 .build()))

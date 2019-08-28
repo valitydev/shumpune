@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -49,7 +48,7 @@ public class PostingPlanServiceImpl implements PostingPlanService {
     public Clock hold(PostingPlanChange postingPlanChange) throws TException {
         postingBatchValidator.validate(postingPlanChange.getBatch(), postingPlanChange.getId());
 
-        PostingPlanModel postingPlanModel = postingPlanToPostingPlanModelConverter.convert(postingPlanChange);
+        PostingPlanModel postingPlanModel = postingPlanToPostingPlanModelConverter.convert(postingPlanChange, PostingOperation.HOLD);
 
         long clock = planDao.insertPostings(postingPlanModel.getPostingModels());
         postingPlanModel.getPostingPlanInfo().setClock(clock);
@@ -134,11 +133,7 @@ public class PostingPlanServiceImpl implements PostingPlanService {
         Map<Long, List<PostingModel>> postingLogs = planDao.getPostingLogs(oldPostingPlanInfo.getId(), oldPostingPlanInfo.getPostingOperation());
         postingsUpdateValidator.validate(postingPlan, postingLogs);
 
-        long clock = planDao.insertPostings(
-                postingPlanToListPostingModelListConverter.convert(postingPlan).stream()
-                        .peek(p -> p.setOperation(postingOperation))
-                        .collect(Collectors.toList())
-        );
+        long clock = planDao.insertPostings(postingPlanToListPostingModelListConverter.convert(postingPlan, postingOperation));
 
         PostingPlanInfo newPostingPlanInfo = postingPlanToPostingPlanInfoConverter.convert(postingPlan);
         newPostingPlanInfo.setClock(clock);
