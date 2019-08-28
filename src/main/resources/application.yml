@@ -8,9 +8,17 @@ management:
       statsd:
         flavor: etsy
         enabled: false
+spring.datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: org.postgresql.Driver
+    url: @db.url@
+    username: @db.user@
+    password: @db.password@
+    hikari.maximum-pool-size: 10
+    hikari.idle-timeout: 30000
 spring:
   application:
-    name: @project.name@
+    name: shumpune
   output:
     ansi:
       enabled: always
@@ -18,7 +26,7 @@ spring:
   banner:
     image:
       location: "shampune.png"
-      invert: true
+      invert: false
 
 
   info:
