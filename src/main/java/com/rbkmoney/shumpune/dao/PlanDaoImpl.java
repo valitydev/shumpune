@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.rbkmoney.shumpune.utils.DaoUtils.checkBatchUpdate;
+
 @Component
 public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao {
 
@@ -218,20 +220,5 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
         Long clock = getNamedParameterJdbcTemplate()
                 .queryForObject(sqlGetClock, params, Long.class);
         return clock != null ? clock : 0L;
-    }
-
-    private void checkBatchUpdate(int[][] updateCounts) {
-        boolean checked = false;
-        for (int[] updateCount : updateCounts) {
-            for (int i : updateCount) {
-                checked = true;
-                if (i != 1) {
-                    throw new DaoException("Posting log creation returned unexpected update count: " + i);
-                }
-            }
-        }
-        if (!checked) {
-            throw new DaoException("Posting log creation returned unexpected update count [0]");
-        }
     }
 }
