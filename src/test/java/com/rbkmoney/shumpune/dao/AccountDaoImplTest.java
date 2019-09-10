@@ -24,6 +24,7 @@ public class AccountDaoImplTest extends DaoTestBase {
     public void batchAccountInsertTest() {
         accountDaoImpl.batchAccountInsert(List.of(
                 new Account(1L, "RUB").setCreationTime(Instant.now().toString()).setDescription("1"),
+                new Account(1L, "RUB").setCreationTime(Instant.now().toString()).setDescription("1"),
                 new Account(2L, "RUB").setCreationTime(Instant.now().toString()).setDescription("2"),
                 new Account(3L, "RUB").setCreationTime(Instant.now().toString()).setDescription("3"),
                 new Account(4L, "RUB").setCreationTime(Instant.now().toString()).setDescription("4")

@@ -20,8 +20,6 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
-import static com.rbkmoney.shumpune.utils.DaoUtils.checkBatchUpdate;
-
 @Service
 public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements AccountDao {
 
@@ -82,7 +80,9 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
 
     public void batchAccountInsert(List<Account> accounts) {
         final String sql =
-                "INSERT INTO shm.account(id, curr_sym_code, creation_time, description) VALUES (?,?,?,?);";
+                "INSERT INTO shm.account(id, curr_sym_code, creation_time, description) " +
+                        "VALUES (?,?,?,?) " +
+                        "ON CONFLICT ON CONSTRAINT account_pkey DO NOTHING;";
         int[][] updateCounts = getJdbcTemplate().batchUpdate(sql, accounts, accounts.size(),
                 (ps, argument) -> {
                     ps.setLong(1, argument.getId());
@@ -90,6 +90,5 @@ public class AccountDaoImpl extends NamedParameterJdbcDaoSupport implements Acco
                     ps.setTimestamp(3, Timestamp.from(TypeUtil.stringToInstant(argument.getCreationTime())));
                     ps.setString(4, argument.getDescription());
                 });
-        checkBatchUpdate(updateCounts);
     }
 }
