@@ -8,6 +8,9 @@ import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.dao.AccountDao;
 import com.rbkmoney.shumpune.dao.PlanDao;
 import com.rbkmoney.shumpune.domain.BalanceModel;
+import com.rbkmoney.shumpune.domain.PostingModel;
+import com.rbkmoney.shumpune.domain.PostingPlanInfo;
+import com.rbkmoney.shumpune.domain.PostingPlanModel;
 import com.rbkmoney.shumpune.utils.AccountGenerator;
 import com.rbkmoney.shumpune.utils.PostingGenerator;
 import com.rbkmoney.shumpune.utils.VectorClockSerializer;
@@ -27,6 +30,8 @@ import java.util.List;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = ShumpuneApplication.class)
 public class ShumpuneServiceHandlerTest extends DaoTestBase {
+
+    public static final String ID = "16J1L7A6Swq.1";
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -302,6 +307,59 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
     private void assertAccount(Account account, AccountPrototype accountPrototype) {
         Assert.assertEquals(accountPrototype.getCurrencySymCode(), account.getCurrencySymCode());
         Assert.assertEquals(accountPrototype.getDescription(), account.getDescription());
+    }
+
+    @Test
+    public void addOrUpdatePlanLog() {
+        PostingPlanModel planLog = new PostingPlanModel();
+        PostingPlanInfo postingPlanInfo = new PostingPlanInfo();
+        postingPlanInfo.setClock(0L);
+        postingPlanInfo.setPostingOperation(PostingOperation.HOLD);
+        postingPlanInfo.setBatchId(1L);
+        postingPlanInfo.setId(ID);
+        planLog.setPostingPlanInfo(postingPlanInfo);
+        ArrayList<PostingModel> postingModels = new ArrayList<>();
+        PostingModel postingModel = new PostingModel();
+        postingModel.setAccountFromId(13L);
+        postingModel.setAccountToId(1L);
+        postingModel.setAmount(4500L);
+        postingModel.setCurrencySymbCode("RUB");
+        postingModels.add(postingModel);
+
+        postingModel = new PostingModel();
+        postingModel.setAccountFromId(4L);
+        postingModel.setAccountToId(13L);
+        postingModel.setAmount(10000L);
+        postingModel.setCurrencySymbCode("RUB");
+        postingModels.add(postingModel);
+
+        postingModel = new PostingModel();
+        postingModel.setAccountFromId(1L);
+        postingModel.setAccountToId(4L);
+        postingModel.setAmount(1500L);
+        postingModel.setCurrencySymbCode("RUB");
+        postingModels.add(postingModel);
+
+        planLog.setPostingModels(postingModels);
+        PostingPlanModel postingPlanModel = planDao.addOrUpdatePlanLog(planLog);
+
+        Assert.assertEquals(ID, postingPlanModel.getPostingPlanInfo().getId());
+
+        planLog.getPostingPlanInfo().setBatchId(2L);
+        postingPlanModel = planDao.addOrUpdatePlanLog(planLog);
+
+        Assert.assertEquals(ID, postingPlanModel.getPostingPlanInfo().getId());
+
+        planLog.getPostingPlanInfo().setPostingOperation(PostingOperation.COMMIT);
+        PostingPlanInfo postingPlanModelInfo = planDao.updatePlanLog(planLog.getPostingPlanInfo());
+
+        Assert.assertEquals(ID, postingPlanModelInfo.getId());
+        Assert.assertEquals(PostingOperation.COMMIT, postingPlanModelInfo.getPostingOperation());
+
+        planLog.getPostingPlanInfo().setPostingOperation(PostingOperation.HOLD);
+        postingPlanModel = planDao.addOrUpdatePlanLog(planLog);
+        Assert.assertEquals(PostingOperation.COMMIT, postingPlanModel.getPostingPlanInfo().getPostingOperation());
+
     }
 
 }

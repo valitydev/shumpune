@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.ClassRule;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -17,6 +19,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import java.util.function.Consumer;
 
 @RunWith(SpringRunner.class)
+@EnableConfigurationProperties({DataSourceProperties.class})
 @ContextConfiguration(initializers = DaoTestBase.Initializer.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Slf4j
@@ -52,6 +55,7 @@ public abstract class DaoTestBase extends AbstractTestUtils {
             TestPropertyValues
                     .of(testContainers.getEnvironmentProperties(getEnvironmentPropertiesConsumer()))
                     .applyTo(configurableApplicationContext);
+
         }
     }
 
