@@ -6,6 +6,7 @@ import com.rbkmoney.damsel.shumpune.MigrationBatch;
 import com.rbkmoney.damsel.shumpune.MigrationHelperSrv;
 import com.rbkmoney.damsel.shumpune.base.InvalidRequest;
 import com.rbkmoney.shumpune.dao.AccountDaoImpl;
+import com.rbkmoney.shumpune.dao.PlanDaoImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
@@ -19,10 +20,15 @@ import java.util.List;
 public class MigrationHelperHandler implements MigrationHelperSrv.Iface {
 
     private final AccountDaoImpl accountDao;
+    private final PlanDaoImpl planDao;
 
     @Override
     public void migratePostingPlans(List<MigrationBatch> list) throws InvalidPostingParams, InvalidRequest, TException {
-        //todo WIP, next PR
+        try {
+            planDao.batchPlanInsert(list);
+        } catch (Throwable e) {
+            throw new TException(e);
+        }
     }
 
     @Override

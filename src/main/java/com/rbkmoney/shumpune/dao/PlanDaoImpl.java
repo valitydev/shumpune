@@ -1,5 +1,8 @@
 package com.rbkmoney.shumpune.dao;
 
+import com.rbkmoney.damsel.shumpune.MigrationBatch;
+import com.rbkmoney.damsel.shumpune.PostingPlan;
+import com.rbkmoney.damsel.shumpune.PostingPlanChange;
 import com.rbkmoney.shumpune.constant.PlanLogFields;
 import com.rbkmoney.shumpune.constant.PostingLogFields;
 import com.rbkmoney.shumpune.constant.PostingOperation;
@@ -221,4 +224,21 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
                 .queryForObject(sqlGetClock, params, Long.class);
         return clock != null ? clock : 0L;
     }
+
+    public void batchPlanInsert(List<MigrationBatch> list) {
+        List<PostingPlanChange> holds = list.stream().filter(MigrationBatch::isSetPlanChange)
+                .map(MigrationBatch::getPlanChange).collect(Collectors.toList());
+        List<PostingPlan> commitsOrRollbacks = list.stream().filter(MigrationBatch::isSetPlan)
+                .map(MigrationBatch::getPlan).collect(Collectors.toList());
+
+
+    }
 }
+
+/*
+select plan_id, case when operation = 'COMMIT' or operation = 'HOLD' then 'COMMIT' else operation end as operation
+from shm.posting_log
+group by plan_id, case when operation = 'COMMIT' or operation = 'HOLD' then 'COMMIT' else operation end
+order by plan_id
+limit 100;
+ */
