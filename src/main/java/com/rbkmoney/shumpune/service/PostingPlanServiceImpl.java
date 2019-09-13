@@ -7,13 +7,11 @@ import com.rbkmoney.damsel.shumpune.PostingPlan;
 import com.rbkmoney.damsel.shumpune.PostingPlanChange;
 import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.converter.PostingPlanToListPostingModelListConverter;
-import com.rbkmoney.shumpune.converter.PostingPlanToPostingPlanInfoConverter;
 import com.rbkmoney.shumpune.converter.PostingPlanToPostingPlanModelConverter;
 import com.rbkmoney.shumpune.dao.AccountLogDao;
 import com.rbkmoney.shumpune.dao.PlanDaoImpl;
 import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.domain.PostingModel;
-import com.rbkmoney.shumpune.domain.PostingPlanInfo;
 import com.rbkmoney.shumpune.domain.PostingPlanModel;
 import com.rbkmoney.shumpune.utils.VectorClockSerializer;
 import com.rbkmoney.shumpune.validator.FinalOpValidator;
@@ -26,8 +24,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -39,7 +39,6 @@ public class PostingPlanServiceImpl implements PostingPlanService {
     private final AccountLogDao accountLogDao;
     private final FinalOpValidator finalOpValidator;
     private final PostingBatchValidator postingBatchValidator;
-    private final PostingPlanToPostingPlanInfoConverter postingPlanToPostingPlanInfoConverter;
     private final PostingsUpdateValidator postingsUpdateValidator;
     private final PostingPlanToListPostingModelListConverter postingPlanToListPostingModelListConverter;
 
@@ -50,11 +49,17 @@ public class PostingPlanServiceImpl implements PostingPlanService {
 
         PostingPlanModel postingPlanModel = postingPlanToPostingPlanModelConverter.convert(postingPlanChange, PostingOperation.HOLD);
 
-        long clock = planDao.insertPostings(postingPlanModel.getPostingModels());
-        postingPlanModel.getPostingPlanInfo().setClock(clock);
-        planDao.addOrUpdatePlanLog(postingPlanModel);
+        Map<Long, List<PostingModel>> postingLogs = planDao.getPostingLogs(postingPlanChange.getId(), PostingOperation.HOLD);
 
-        return Clock.vector(VectorClockSerializer.serialize(postingPlanModel.getPostingPlanInfo().getClock()));
+        if (postingLogs.containsKey(postingPlanChange.getBatch().getId())) {
+            log.info("This is duplicate request (HOLD), postingPlanChange: {}", postingPlanChange);
+            return Clock.vector(VectorClockSerializer.serialize(
+                    planDao.selectMaxClock(postingPlanChange.getId(), postingPlanChange.getBatch().getId())));
+        }
+
+        long clock = planDao.insertPostings(postingPlanModel.getPostingModels());
+
+        return Clock.vector(VectorClockSerializer.serialize(clock));
     }
 
     @Override
@@ -125,23 +130,31 @@ public class PostingPlanServiceImpl implements PostingPlanService {
             postingBatchValidator.validate(postingBatch, postingPlan.getId());
         }
 
-        PostingPlanInfo oldPostingPlanInfo = planDao.selectForUpdatePlanLog(postingPlan.getId());
-        if (oldPostingPlanInfo == null) {
+        List<PostingModel> postingModels = planDao.getPostingModelsPlanById(postingPlan.getId());
+
+        if (postingModels.isEmpty()) {
             throw new InvalidRequest(Collections.singletonList(String.format("Hold OPERATION not found for plan: %s", postingPlan.getId())));
         }
 
-        Map<Long, List<PostingModel>> postingLogs = planDao.getPostingLogs(oldPostingPlanInfo.getId(), oldPostingPlanInfo.getPostingOperation());
+        if (containsFinalOps(postingModels)) {
+            log.info("This is duplicate request ({}), postingPlan: {}", postingOperation, postingPlan);
+            PostingModel postingModel = postingModels.stream().max(Comparator.comparingLong(PostingModel::getBatchId)).get();
+            return Clock.vector(VectorClockSerializer.serialize(planDao.selectMaxClock(postingPlan.getId(), postingModel.getBatchId())));
+        }
+
+        Map<Long, List<PostingModel>> postingLogs = postingModels.stream()
+                .filter(postingModel -> postingModel.getOperation().equals(PostingOperation.HOLD))
+                .collect(Collectors.groupingBy(PostingModel::getBatchId));
         postingsUpdateValidator.validate(postingPlan, postingLogs);
 
         long clock = planDao.insertPostings(postingPlanToListPostingModelListConverter.convert(postingPlan, postingOperation));
 
-        PostingPlanInfo newPostingPlanInfo = postingPlanToPostingPlanInfoConverter.convert(postingPlan);
-        newPostingPlanInfo.setClock(clock);
-        newPostingPlanInfo.setPostingOperation(postingOperation);
+        return Clock.vector(VectorClockSerializer.serialize(clock));
+    }
 
-        PostingPlanInfo updatePlanLog = planDao.updatePlanLog(newPostingPlanInfo);
-
-        return Clock.vector(VectorClockSerializer.serialize(updatePlanLog.getClock()));
+    private boolean containsFinalOps(List<PostingModel> postingModels) {
+        return postingModels.stream()
+                .anyMatch(postingModel -> !postingModel.getOperation().equals(PostingOperation.HOLD));
     }
 
 }

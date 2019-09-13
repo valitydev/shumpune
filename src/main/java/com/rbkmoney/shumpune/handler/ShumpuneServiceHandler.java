@@ -78,13 +78,10 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
         try {
             List<PostingModel> postingModelsPlanById = planDao.getPostingModelsPlanById(planId);
             Map<Long, List<PostingModel>> collect = postingModelsPlanById.stream()
-                    .collect(Collectors.groupingBy(o -> o.getBatchId()));
+                    .collect(Collectors.groupingBy(PostingModel::getBatchId));
             List<PostingBatch> postingBatches = collect.entrySet().stream()
-                    .map(entry -> {
-                                PostingBatch postingBatch = postingModelToPostingBatchConverter.convert(entry.getValue());
-                                return postingBatch.setId(entry.getKey());
-                            }
-                    ).collect(Collectors.toList());
+                    .map(entry -> postingModelToPostingBatchConverter.convert(entry.getValue()).setId(entry.getKey()))
+                    .collect(Collectors.toList());
             PostingPlan postingPlan = new PostingPlan()
                     .setId(planId)
                     .setBatchList(postingBatches);
