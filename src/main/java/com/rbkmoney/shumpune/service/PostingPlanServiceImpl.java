@@ -138,7 +138,8 @@ public class PostingPlanServiceImpl implements PostingPlanService {
 
         if (containsFinalOps(postingModels)) {
             log.info("This is duplicate request ({}), postingPlan: {}", postingOperation, postingPlan);
-            PostingModel postingModel = postingModels.stream().max(Comparator.comparingLong(PostingModel::getBatchId)).get();
+            PostingModel postingModel = postingModels.stream().max(Comparator.comparingLong(PostingModel::getBatchId))
+                    .orElseThrow(); //never happens, but sonarqube complains
             return Clock.vector(VectorClockSerializer.serialize(planDao.selectMaxClock(postingPlan.getId(), postingModel.getBatchId())));
         }
 
