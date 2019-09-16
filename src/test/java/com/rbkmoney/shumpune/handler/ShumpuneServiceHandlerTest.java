@@ -4,7 +4,6 @@ import com.rbkmoney.damsel.shumpune.*;
 import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.shumpune.DaoTestBase;
 import com.rbkmoney.shumpune.ShumpuneApplication;
-import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.dao.AccountDao;
 import com.rbkmoney.shumpune.dao.PlanDao;
 import com.rbkmoney.shumpune.domain.BalanceModel;
@@ -60,15 +59,93 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(planHold, providerAcc, systemAcc, merchantAcc);
         Clock clock = handler.hold(postingPlanChange);
 
-        jdbcTemplate.query("select * from shm.plan_log where plan_id = \'" + postingPlanChange.getId() + "\'",
+        jdbcTemplate.query("select * from shm.posting_log where plan_id = \'" + postingPlanChange.getId() + "\'",
                 (rs, rowNum) -> {
-                    Assert.assertEquals(PostingOperation.HOLD.name(), rs.getString("last_operation"));
-                    Assert.assertEquals(postingPlanChange.getBatch().getId(), rs.getLong("last_batch_id"));
-                    Assert.assertTrue(rs.getLong("CLOCK") > 0);
+                    Assert.assertEquals(postingPlanChange.getBatch().getId(), rs.getLong("batch_id"));
+                    Assert.assertTrue(rs.getLong("id") > 0);
                     return null;
                 });
 
         checkMinAvailable(providerAcc, -300000L, merchantAcc, -9000L, systemAcc, -6000L, clock);
+    }
+
+    @Test(expected = TException.class)
+    public void holdInvalidRequest() throws TException {
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(now);
+        long providerAcc = handler.createAccount(accountPrototype);
+        long merchantAcc = handler.createAccount(accountPrototype);
+        long systemAcc = handler.createAccount(accountPrototype);
+
+        String planHold = "plan_hold_invalid_request";
+        PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(planHold, providerAcc, systemAcc, merchantAcc);
+        handler.hold(postingPlanChange);
+
+        //making plan incorrect
+        postingPlanChange.getBatch().getPostings().get(0).setAmount(123L);
+        handler.hold(postingPlanChange);
+    }
+
+    @Test(expected = TException.class)
+    public void commitInvalidRequest() throws TException {
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(now);
+        long providerAcc = handler.createAccount(accountPrototype);
+        long merchantAcc = handler.createAccount(accountPrototype);
+        long systemAcc = handler.createAccount(accountPrototype);
+
+        String planCommit = "plan_commit_invalid_postings";
+        PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(planCommit, providerAcc, systemAcc, merchantAcc);
+        handler.hold(postingPlanChange);
+
+        PostingBatch batch = PostingGenerator.createBatch(providerAcc, systemAcc, merchantAcc);
+        ArrayList<PostingBatch> batchList = new ArrayList<>();
+        batchList.add(batch);
+        PostingPlan postingPlan = new PostingPlan()
+                .setId(planCommit)
+                .setBatchList(batchList);
+
+        handler.commitPlan(postingPlan);
+
+        //making plan incorrect
+        postingPlan.getBatchList().get(0).getPostings().get(0).setAmount(123L);
+        handler.commitPlan(postingPlan);
+    }
+
+    @Test
+    public void doubleHold() throws TException {
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(now);
+        long providerAcc = handler.createAccount(accountPrototype);
+        long merchantAcc = handler.createAccount(accountPrototype);
+        long systemAcc = handler.createAccount(accountPrototype);
+
+        String planHold = "plan_hold_double";
+        PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(planHold, providerAcc, systemAcc, merchantAcc);
+
+        handler.hold(postingPlanChange);
+
+        PostingPlan plan = handler.getPlan(planHold);
+        plan.getBatchList()
+                .forEach(postingBatch -> {
+                    Assert.assertEquals(PostingGenerator.BATCH_ID, postingBatch.getId());
+                    Assert.assertEquals(3L, postingBatch.getPostings().size());
+                });
+
+        handler.hold(postingPlanChange);
+
+        plan = handler.getPlan(planHold);
+        plan.getBatchList()
+                .forEach(postingBatch -> {
+                    Assert.assertEquals(PostingGenerator.BATCH_ID, postingBatch.getId());
+                    Assert.assertEquals(3L, postingBatch.getPostings().size());
+                });
     }
 
     private void checkMinAvailable(long providerAcc, long providerSum, long merchantAcc, long merchantSum,
@@ -126,12 +203,6 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
 
         Clock clock = handler.commitPlan(postingPlan);
 
-        jdbcTemplate.query("select * from shm.plan_log where plan_id = \'" + postingPlan.getId() + "\'",
-                (rs, rowNum) -> {
-                    Assert.assertEquals(PostingOperation.COMMIT.name(), rs.getString("last_operation"));
-                    return rs.getString("last_operation");
-                });
-
         checkMinAvailable(providerAcc, -294000L, merchantAcc, 291000L, systemAcc, 3000L, clock);
         checkOwnAcc(providerAcc, -294000L, merchantAcc, 291000L, systemAcc, 3000L, clock);
 
@@ -139,6 +210,86 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
 
         Assert.assertEquals(planCommit, plan.getId());
         Assert.assertFalse(plan.getBatchList().isEmpty());
+        plan.getBatchList()
+                .forEach(postingBatch -> {
+                    Assert.assertEquals(PostingGenerator.BATCH_ID, postingBatch.getId());
+                    Assert.assertEquals(6L, postingBatch.getPostings().size());
+                });
+    }
+
+    @Test
+    public void doubleCommit() throws TException {
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(now);
+        long providerAcc = handler.createAccount(accountPrototype);
+        long merchantAcc = handler.createAccount(accountPrototype);
+        long systemAcc = handler.createAccount(accountPrototype);
+
+        String planCommit = "plan_commit_double";
+        PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(planCommit, providerAcc, systemAcc, merchantAcc);
+        handler.hold(postingPlanChange);
+
+        PostingBatch batch = PostingGenerator.createBatch(providerAcc, systemAcc, merchantAcc);
+        ArrayList<PostingBatch> batchList = new ArrayList<>();
+        batchList.add(batch);
+        PostingPlan postingPlan = new PostingPlan()
+                .setId(planCommit)
+                .setBatchList(batchList);
+
+        handler.commitPlan(postingPlan);
+
+        PostingPlan plan = handler.getPlan(planCommit);
+        plan.getBatchList()
+                .forEach(postingBatch -> {
+                    Assert.assertEquals(PostingGenerator.BATCH_ID, postingBatch.getId());
+                    Assert.assertEquals(6L, postingBatch.getPostings().size());
+                });
+
+        handler.commitPlan(postingPlan);
+
+        plan = handler.getPlan(planCommit);
+        plan.getBatchList()
+                .forEach(postingBatch -> {
+                    Assert.assertEquals(PostingGenerator.BATCH_ID, postingBatch.getId());
+                    Assert.assertEquals(6L, postingBatch.getPostings().size());
+                });
+    }
+
+    @Test
+    public void rollbackAfterCommit() throws TException {
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(now);
+        long providerAcc = handler.createAccount(accountPrototype);
+        long merchantAcc = handler.createAccount(accountPrototype);
+        long systemAcc = handler.createAccount(accountPrototype);
+
+        String planCommit = "plan_rollback_after_commit";
+        PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(planCommit, providerAcc, systemAcc, merchantAcc);
+        handler.hold(postingPlanChange);
+
+        PostingBatch batch = PostingGenerator.createBatch(providerAcc, systemAcc, merchantAcc);
+        ArrayList<PostingBatch> batchList = new ArrayList<>();
+        batchList.add(batch);
+        PostingPlan postingPlan = new PostingPlan()
+                .setId(planCommit)
+                .setBatchList(batchList);
+
+        handler.commitPlan(postingPlan);
+
+        PostingPlan plan = handler.getPlan(planCommit);
+        plan.getBatchList()
+                .forEach(postingBatch -> {
+                    Assert.assertEquals(PostingGenerator.BATCH_ID, postingBatch.getId());
+                    Assert.assertEquals(6L, postingBatch.getPostings().size());
+                });
+
+        handler.rollbackPlan(postingPlan);
+
+        plan = handler.getPlan(planCommit);
         plan.getBatchList()
                 .forEach(postingBatch -> {
                     Assert.assertEquals(PostingGenerator.BATCH_ID, postingBatch.getId());
@@ -207,11 +358,6 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
 
         Clock clock = handler.rollbackPlan(postingPlan);
 
-        jdbcTemplate.query("select * from shm.plan_log where plan_id = \'" + postingPlan.getId() + "\'",
-                (rs, rowNum) -> {
-                    Assert.assertEquals(PostingOperation.ROLLBACK.name(), rs.getString("last_operation"));
-                    return rs.getString("last_operation");
-                });
 
         checkMinAvailable(providerAcc, 0L, merchantAcc, 0L, systemAcc, 0L, clock);
         checkOwnAcc(providerAcc, 0L, merchantAcc, 0L, systemAcc, 0L, clock);
