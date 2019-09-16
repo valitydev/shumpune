@@ -1,10 +1,10 @@
 package com.rbkmoney.shumpune.service;
 
-import com.rbkmoney.damsel.base.InvalidRequest;
 import com.rbkmoney.damsel.shumpune.Clock;
 import com.rbkmoney.damsel.shumpune.PostingBatch;
 import com.rbkmoney.damsel.shumpune.PostingPlan;
 import com.rbkmoney.damsel.shumpune.PostingPlanChange;
+import com.rbkmoney.damsel.shumpune.base.InvalidRequest;
 import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.converter.PostingPlanToListPostingModelListConverter;
 import com.rbkmoney.shumpune.converter.PostingPlanToPostingPlanModelConverter;
@@ -52,6 +52,7 @@ public class PostingPlanServiceImpl implements PostingPlanService {
         Map<Long, List<PostingModel>> postingLogs = planDao.getPostingLogs(postingPlanChange.getId(), PostingOperation.HOLD);
 
         if (postingLogs.containsKey(postingPlanChange.getBatch().getId())) {
+            postingsUpdateValidator.validate(List.of(postingPlanChange.getBatch()), postingLogs);
             log.info("This is duplicate request (HOLD), postingPlanChange: {}", postingPlanChange);
             return Clock.vector(VectorClockSerializer.serialize(
                     planDao.selectMaxClock(postingPlanChange.getId(), postingPlanChange.getBatch().getId())));
@@ -136,17 +137,23 @@ public class PostingPlanServiceImpl implements PostingPlanService {
             throw new InvalidRequest(Collections.singletonList(String.format("Hold OPERATION not found for plan: %s", postingPlan.getId())));
         }
 
-        if (containsFinalOps(postingModels)) {
+        Map<Long, List<PostingModel>> postingLogsHolds = postingModels.stream()
+                .filter(postingModel -> postingModel.getOperation().equals(PostingOperation.HOLD))
+                .collect(Collectors.groupingBy(PostingModel::getBatchId));
+
+        Map<Long, List<PostingModel>> postingLogsFinal = postingModels.stream()
+                .filter(postingModel -> !postingModel.getOperation().equals(PostingOperation.HOLD))
+                .collect(Collectors.groupingBy(PostingModel::getBatchId));
+
+        if (!postingLogsFinal.isEmpty()) {
+            postingsUpdateValidator.validate(postingPlan.getBatchList(), postingLogsFinal);
             log.info("This is duplicate request ({}), postingPlan: {}", postingOperation, postingPlan);
             PostingModel postingModel = postingModels.stream().max(Comparator.comparingLong(PostingModel::getBatchId))
                     .orElseThrow(); //never happens, but sonarqube complains
             return Clock.vector(VectorClockSerializer.serialize(planDao.selectMaxClock(postingPlan.getId(), postingModel.getBatchId())));
         }
 
-        Map<Long, List<PostingModel>> postingLogs = postingModels.stream()
-                .filter(postingModel -> postingModel.getOperation().equals(PostingOperation.HOLD))
-                .collect(Collectors.groupingBy(PostingModel::getBatchId));
-        postingsUpdateValidator.validate(postingPlan, postingLogs);
+        postingsUpdateValidator.validate(postingPlan.getBatchList(), postingLogsHolds);
 
         long clock = planDao.insertPostings(postingPlanToListPostingModelListConverter.convert(postingPlan, postingOperation));
 

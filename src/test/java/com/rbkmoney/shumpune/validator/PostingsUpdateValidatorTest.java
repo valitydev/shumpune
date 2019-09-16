@@ -1,9 +1,9 @@
 package com.rbkmoney.shumpune.validator;
 
-import com.rbkmoney.damsel.base.InvalidRequest;
 import com.rbkmoney.damsel.shumpune.Posting;
 import com.rbkmoney.damsel.shumpune.PostingBatch;
 import com.rbkmoney.damsel.shumpune.PostingPlan;
+import com.rbkmoney.damsel.shumpune.base.InvalidRequest;
 import com.rbkmoney.shumpune.domain.PostingModel;
 import org.apache.thrift.TException;
 import org.junit.Test;
@@ -35,7 +35,7 @@ public class PostingsUpdateValidatorTest {
         batchList.add(postingBatch);
         batchList.add(postingBatchSecond);
         receivedPostingPlan.setBatchList(batchList);
-        postingsUpdateValidator.validate(receivedPostingPlan, savedBatches);
+        postingsUpdateValidator.validate(receivedPostingPlan.getBatchList(), savedBatches);
     }
 
     @Test(expected = InvalidRequest.class)
@@ -51,7 +51,7 @@ public class PostingsUpdateValidatorTest {
         postingBatch.setId(idBatch);
         batchList.add(postingBatch);
         receivedPostingPlan.setBatchList(batchList);
-        postingsUpdateValidator.validate(receivedPostingPlan, savedBatches);
+        postingsUpdateValidator.validate(receivedPostingPlan.getBatchList(), savedBatches);
     }
 
     @Test(expected = InvalidRequest.class)
@@ -81,6 +81,6 @@ public class PostingsUpdateValidatorTest {
         postingBatch.setPostings(postings);
         batchList.add(postingBatch);
         receivedPostingPlan.setBatchList(batchList);
-        postingsUpdateValidator.validate(receivedPostingPlan, savedBatches);
+        postingsUpdateValidator.validate(receivedPostingPlan.getBatchList(), savedBatches);
     }
 }

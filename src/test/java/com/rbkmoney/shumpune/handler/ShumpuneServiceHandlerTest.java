@@ -69,6 +69,53 @@ public class ShumpuneServiceHandlerTest extends DaoTestBase {
         checkMinAvailable(providerAcc, -300000L, merchantAcc, -9000L, systemAcc, -6000L, clock);
     }
 
+    @Test(expected = TException.class)
+    public void holdInvalidRequest() throws TException {
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(now);
+        long providerAcc = handler.createAccount(accountPrototype);
+        long merchantAcc = handler.createAccount(accountPrototype);
+        long systemAcc = handler.createAccount(accountPrototype);
+
+        String planHold = "plan_hold_invalid_request";
+        PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(planHold, providerAcc, systemAcc, merchantAcc);
+        handler.hold(postingPlanChange);
+
+        //making plan incorrect
+        postingPlanChange.getBatch().getPostings().get(0).setAmount(123L);
+        handler.hold(postingPlanChange);
+    }
+
+    @Test(expected = TException.class)
+    public void commitInvalidRequest() throws TException {
+        Instant now = Instant.now();
+
+        //simple save
+        AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(now);
+        long providerAcc = handler.createAccount(accountPrototype);
+        long merchantAcc = handler.createAccount(accountPrototype);
+        long systemAcc = handler.createAccount(accountPrototype);
+
+        String planCommit = "plan_commit_invalid_postings";
+        PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(planCommit, providerAcc, systemAcc, merchantAcc);
+        handler.hold(postingPlanChange);
+
+        PostingBatch batch = PostingGenerator.createBatch(providerAcc, systemAcc, merchantAcc);
+        ArrayList<PostingBatch> batchList = new ArrayList<>();
+        batchList.add(batch);
+        PostingPlan postingPlan = new PostingPlan()
+                .setId(planCommit)
+                .setBatchList(batchList);
+
+        handler.commitPlan(postingPlan);
+
+        //making plan incorrect
+        postingPlan.getBatchList().get(0).getPostings().get(0).setAmount(123L);
+        handler.commitPlan(postingPlan);
+    }
+
     @Test
     public void doubleHold() throws TException {
         Instant now = Instant.now();
