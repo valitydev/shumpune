@@ -1,10 +1,9 @@
 package com.rbkmoney.shumpune.validator;
 
 
-import com.rbkmoney.damsel.base.InvalidRequest;
 import com.rbkmoney.damsel.shumpune.Posting;
 import com.rbkmoney.damsel.shumpune.PostingBatch;
-import com.rbkmoney.damsel.shumpune.PostingPlan;
+import com.rbkmoney.damsel.shumpune.base.InvalidRequest;
 import com.rbkmoney.shumpune.domain.PostingModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,9 +25,8 @@ public class PostingsUpdateValidator {
     private static final String POSTING_IN_BATCH_INVALID = "Posting in batch id: %d invalid";
     private static final String POSTING_BATCH_SIZE_IS_INCORRECT = "Posting in batch id: %d size: %d but in old size: %d";
 
-    public void validate(PostingPlan receivedPostingPlan, Map<Long, List<PostingModel>> savedBatches) throws TException {
-        List<PostingBatch> newBatchList = receivedPostingPlan.getBatchList();
-        Set<Long> receivedBatchIds = newBatchList.stream()
+    public void validate(List<PostingBatch> receivedBatchList, Map<Long, List<PostingModel>> savedBatches) throws TException {
+        Set<Long> receivedBatchIds = receivedBatchList.stream()
                 .map(PostingBatch::getId)
                 .collect(Collectors.toSet());
 
@@ -39,7 +37,7 @@ public class PostingsUpdateValidator {
             throw new InvalidRequest(Collections.singletonList(String.format(POSTING_BATCH_ID_VIOLATION, minReceivedBatch, maxSavedBatch)));
         }
 
-        for (PostingBatch receivedBatch : newBatchList) {
+        for (PostingBatch receivedBatch : receivedBatchList) {
             List<PostingModel> savedBatch = savedBatches.get(receivedBatch.getId());
             if (savedBatch != null) {
                 validateBatchSize(receivedBatch, savedBatch);

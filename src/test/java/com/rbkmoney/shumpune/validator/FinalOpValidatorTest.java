@@ -1,9 +1,9 @@
 package com.rbkmoney.shumpune.validator;
 
-import com.rbkmoney.damsel.base.InvalidRequest;
 import com.rbkmoney.damsel.shumpune.Posting;
 import com.rbkmoney.damsel.shumpune.PostingBatch;
 import com.rbkmoney.damsel.shumpune.PostingPlan;
+import com.rbkmoney.damsel.shumpune.base.InvalidRequest;
 import org.junit.Test;
 
 import java.util.ArrayList;
