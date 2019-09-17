@@ -1,10 +1,8 @@
 package com.rbkmoney.shumpune.handler;
 
 import com.rbkmoney.damsel.shumpune.Account;
-import com.rbkmoney.damsel.shumpune.InvalidPostingParams;
-import com.rbkmoney.damsel.shumpune.MigrationBatch;
 import com.rbkmoney.damsel.shumpune.MigrationHelperSrv;
-import com.rbkmoney.damsel.shumpune.base.InvalidRequest;
+import com.rbkmoney.damsel.shumpune.MigrationPostingPlan;
 import com.rbkmoney.shumpune.dao.AccountDaoImpl;
 import com.rbkmoney.shumpune.dao.PlanDaoImpl;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +21,7 @@ public class MigrationHelperHandler implements MigrationHelperSrv.Iface {
     private final PlanDaoImpl planDao;
 
     @Override
-    public void migratePostingPlans(List<MigrationBatch> list) throws InvalidPostingParams, InvalidRequest, TException {
+    public void migratePostingPlans(List<MigrationPostingPlan> list) throws TException {
         try {
             planDao.batchPlanInsert(list);
         } catch (Throwable e) {
