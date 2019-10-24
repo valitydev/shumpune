@@ -6,6 +6,7 @@ import com.rbkmoney.shumpune.dao.mapper.PostingModelMapper;
 import com.rbkmoney.shumpune.domain.BalanceModel;
 import com.rbkmoney.shumpune.domain.PostingModel;
 import com.rbkmoney.shumpune.exception.DaoException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.NestedRuntimeException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao {
 
@@ -94,7 +96,7 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
         getNamedParameterJdbcTemplate()
                 .query(String.format(SQL_GET_SUM_BY_ACC, PostingLogFields.TO_ACCOUNT_ID), params, rs -> {
                     putSumToByOperation(sumMapTo, rs);
-        });
+                });
 
         return BalanceModel.builder()
                 .accountId(accountId)
