@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = ShumpuneApplication.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class ConsistencyTest extends DaoTestBase {
 
     @RequiredArgsConstructor
@@ -87,6 +87,7 @@ public class ConsistencyTest extends DaoTestBase {
     private ExecutorService executorService = Executors.newFixedThreadPool(THREAD_NUM);
 
     @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
     public void getBalanceConcurrency() throws TException, ExecutionException, InterruptedException {
         AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(Instant.now());
         serviceHandler.createAccount(accountPrototype);
