@@ -90,9 +90,7 @@ public class PostingPlanServiceImpl implements PostingPlanService {
             fromClock = lastBalanceById.getClock();
         }
 
-        long maxClockForAccount = initMaxClockForAccount(accountId, clock, clockValue);
-
-        BalanceModel balance = planDao.getBalance(accountId, fromClock, maxClockForAccount);
+        BalanceModel balance = planDao.getBalance(accountId, fromClock, clockValue);
         if (lastBalanceById != null) {
             balance.setOwnAmount(lastBalanceById.getOwnAmount() + balance.getOwnAmount());
             balance.setMaxAvailableAmount(lastBalanceById.getMaxAvailableAmount() + balance.getMaxAvailableAmount());
