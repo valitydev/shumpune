@@ -36,6 +36,7 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
         try {
             return postingPlanService.hold(postingPlanChange);
         } catch (DaoException e) {
+            //todo uncomment
 //            log.error("Failed to hold e: ", e);
             throw new WUnavailableResultException(e);
         } catch (Exception e) {

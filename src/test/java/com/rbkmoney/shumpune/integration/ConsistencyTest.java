@@ -60,8 +60,8 @@ public class ConsistencyTest extends DaoTestBase {
         }
     }
 
-    private static final int ATTEMPTS = 10000;
-    private static final int THREAD_NUM = 16;
+    private static final int ATTEMPTS = 100;
+    private static final int THREAD_NUM = 10;
 
     @Autowired
     ShumpuneServiceHandler serviceHandler;
@@ -123,5 +123,41 @@ public class ConsistencyTest extends DaoTestBase {
             jdbcTemplate.execute("delete from shm.account_log;");
             jdbcTemplate.execute("delete from shm.posting_log;");
         }
+    }
+
+    @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
+    public void doWorkConcurrentlyAndThenCheckTotalBalance() throws TException, ExecutionException, InterruptedException {
+        AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(Instant.now());
+        serviceHandler.createAccount(accountPrototype);
+        serviceHandler.createAccount(accountPrototype);
+        serviceHandler.createAccount(accountPrototype);
+
+        AtomicInteger atomicInteger = new AtomicInteger(0);
+
+        for (int j = 0; j < ATTEMPTS; j++) {
+
+            for (int i = 0; i < THREAD_NUM; i++) {
+                PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(j + i + "", 1L, 2L, 3L, (long) 1);
+                executorService.submit(new ExecutePlan(
+                        atomicInteger,
+                        serviceHandler,
+                        postingPlanChange,
+                        retryTemplate)
+                );
+            }
+            //todo можно и без этого
+            executorService.submit(() ->
+                    retryTemplate.execute(c ->
+                            serviceHandler.getBalanceByID(1L, Clock.latest(new LatestClock()))));
+        }
+
+        executorService.awaitTermination(1, TimeUnit.HOURS);
+
+        Balance finalBalance = retryTemplate.execute(c -> serviceHandler.getBalanceByID(1L, Clock.latest(new LatestClock())));
+        Assert.assertEquals(-ATTEMPTS * THREAD_NUM, finalBalance.min_available_amount);
+        Assert.assertEquals(ATTEMPTS * THREAD_NUM, finalBalance.max_available_amount);
+        Assert.assertEquals(0, finalBalance.own_amount);
+
     }
 }
