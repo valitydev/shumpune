@@ -152,6 +152,7 @@ public class ConsistencyTest extends DaoTestBase {
                             serviceHandler.getBalanceByID(1L, Clock.latest(new LatestClock()))));
         }
 
+        executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.HOURS);
 
         Balance finalBalance = retryTemplate.execute(c -> serviceHandler.getBalanceByID(1L, Clock.latest(new LatestClock())));
