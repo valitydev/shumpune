@@ -57,7 +57,7 @@ public class ConsistencyTest extends DaoTestBase {
         }
     }
 
-    private static final int ATTEMPTS = 10000;
+    private static final int ATTEMPTS = 1000000;
 
     @Autowired
     ShumpuneServiceHandler serviceHandler;
