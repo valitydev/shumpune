@@ -60,8 +60,8 @@ public class ConsistencyTest extends DaoTestBase {
         }
     }
 
-    private static final int ATTEMPTS = 100;
-    private static final int THREAD_NUM = 10;
+    private static final int ATTEMPTS = 1000;
+    private static final int THREAD_NUM = 16;
 
     @Autowired
     ShumpuneServiceHandler serviceHandler;
@@ -138,7 +138,7 @@ public class ConsistencyTest extends DaoTestBase {
         for (int j = 0; j < ATTEMPTS; j++) {
 
             for (int i = 0; i < THREAD_NUM; i++) {
-                PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(j + i + "", 1L, 2L, 3L, (long) 1);
+                PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(j + " " + i + " ", 1L, 2L, 3L, (long) 1);
                 executorService.submit(new ExecutePlan(
                         atomicInteger,
                         serviceHandler,
