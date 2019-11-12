@@ -57,7 +57,7 @@ public class ConsistencyTest extends DaoTestBase {
         }
     }
 
-    private static final int ATTEMPTS = 10000;
+    private static final int ATTEMPTS = 1000000;
 
     @Autowired
     ShumpuneServiceHandler serviceHandler;
@@ -104,7 +104,7 @@ public class ConsistencyTest extends DaoTestBase {
 
 
         executorService.shutdown();
-        executorService.awaitTermination(1, TimeUnit.HOURS);
+        executorService.awaitTermination(20, TimeUnit.HOURS);
 
         Balance finalBalance = retryTemplate.execute(c -> serviceHandler.getBalanceByID(1L, Clock.latest(new LatestClock())));
         Assert.assertEquals(-ATTEMPTS, finalBalance.min_available_amount);
