@@ -93,7 +93,7 @@ public class ConsistencyTest extends DaoTestBase {
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
         for (int j = 0; j < ATTEMPTS; j++) {
-            PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(j, 1L, 2L, 3L, (long) 1);
+            PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(j + "", 1L, 2L, 3L, (long) 1);
             executorService.submit(new ExecutePlan(
                     atomicInteger,
                     serviceHandler,
