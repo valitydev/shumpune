@@ -22,11 +22,8 @@ import org.springframework.retry.policy.AlwaysRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.shaded.org.apache.commons.lang.StringUtils;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -84,43 +81,6 @@ public class ConsistencyTest extends DaoTestBase {
     }
 
     private ExecutorService executorService = Executors.newFixedThreadPool(16);
-
-    @Test
-    @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
-    public void getBalanceConcurrency() throws TException, ExecutionException, InterruptedException {
-        AccountPrototype accountPrototype = AccountGenerator.createAccountPrototype(Instant.now());
-        serviceHandler.createAccount(accountPrototype);
-        serviceHandler.createAccount(accountPrototype);
-        serviceHandler.createAccount(accountPrototype);
-
-        AtomicInteger atomicInteger = new AtomicInteger(0);
-
-        List<Future<Map.Entry<Integer, Balance>>> futureList = new ArrayList<>();
-
-
-        for (int j = 0; j < ATTEMPTS; j++) {
-            PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(j, 1L, 2L, 3L, (long) Math.pow(10, i));
-            futureList.add(executorService.submit(new ExecutePlan(
-                    atomicInteger,
-                    serviceHandler,
-                    postingPlanChange,
-                    retryTemplate)
-            ));
-        }
-
-        for (Future<Map.Entry<Integer, Balance>> entryFuture : futureList) {
-            entryFuture.get();
-        }
-
-        String s = retryTemplate.execute(c -> serviceHandler.getBalanceByID(1L, Clock.latest(new LatestClock())).min_available_amount + "");
-
-        Assert.assertTrue(s, s.contains(StringUtils.repeat("1", 16)));
-
-        futureList.clear();
-        jdbcTemplate.execute("delete from shm.account_log;");
-        jdbcTemplate.execute("delete from shm.posting_log;");
-    }
-
 
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
