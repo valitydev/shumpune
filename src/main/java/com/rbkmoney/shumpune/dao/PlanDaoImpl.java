@@ -1,6 +1,5 @@
 package com.rbkmoney.shumpune.dao;
 
-import com.google.common.primitives.Longs;
 import com.rbkmoney.shumpune.constant.PostingLogFields;
 import com.rbkmoney.shumpune.constant.PostingOperation;
 import com.rbkmoney.shumpune.dao.mapper.PostingModelMapper;
@@ -112,7 +111,7 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
 
     private void putSumToByOperation(Map<String, Long> sumMapFrom, ResultSet rs) throws SQLException {
         // null pointer when we use Longs.fromByteArray(rs.getBytes("own_amount"))
-        sumMapFrom.put(rs.getString(OPERATION), rs.getLong("own_amount"));
+        sumMapFrom.put(rs.getString(OPERATION), Long.valueOf(rs.getString("own_amount")));
     }
 
     @Override

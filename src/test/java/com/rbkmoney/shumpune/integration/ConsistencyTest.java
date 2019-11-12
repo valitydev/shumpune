@@ -60,8 +60,7 @@ public class ConsistencyTest extends DaoTestBase {
         }
     }
 
-    private static final int ATTEMPTS = 1000;
-    private static final int THREAD_NUM = 16;
+    private static final int ATTEMPTS = 10000;
 
     @Autowired
     ShumpuneServiceHandler serviceHandler;
@@ -84,7 +83,7 @@ public class ConsistencyTest extends DaoTestBase {
         return retryTemplate;
     }
 
-    private ExecutorService executorService = Executors.newFixedThreadPool(THREAD_NUM);
+    private ExecutorService executorService = Executors.newFixedThreadPool(16);
 
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
@@ -100,30 +99,28 @@ public class ConsistencyTest extends DaoTestBase {
 
 
         for (int j = 0; j < ATTEMPTS; j++) {
-
-            for (int i = 0; i < THREAD_NUM; i++) {
-                PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(j + i + "", 1L, 2L, 3L, (long) Math.pow(10, i));
-                futureList.add(executorService.submit(new ExecutePlan(
-                        atomicInteger,
-                        serviceHandler,
-                        postingPlanChange,
-                        retryTemplate)
-                ));
-            }
-
-            for (Future<Map.Entry<Integer, Balance>> entryFuture : futureList) {
-                entryFuture.get();
-            }
-
-            String s = retryTemplate.execute(c -> serviceHandler.getBalanceByID(1L, Clock.latest(new LatestClock())).min_available_amount + "");
-
-            Assert.assertTrue(s, s.contains(StringUtils.repeat("1", THREAD_NUM)));
-
-            futureList.clear();
-            jdbcTemplate.execute("delete from shm.account_log;");
-            jdbcTemplate.execute("delete from shm.posting_log;");
+            PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(j, 1L, 2L, 3L, (long) Math.pow(10, i));
+            futureList.add(executorService.submit(new ExecutePlan(
+                    atomicInteger,
+                    serviceHandler,
+                    postingPlanChange,
+                    retryTemplate)
+            ));
         }
+
+        for (Future<Map.Entry<Integer, Balance>> entryFuture : futureList) {
+            entryFuture.get();
+        }
+
+        String s = retryTemplate.execute(c -> serviceHandler.getBalanceByID(1L, Clock.latest(new LatestClock())).min_available_amount + "");
+
+        Assert.assertTrue(s, s.contains(StringUtils.repeat("1", 16)));
+
+        futureList.clear();
+        jdbcTemplate.execute("delete from shm.account_log;");
+        jdbcTemplate.execute("delete from shm.posting_log;");
     }
+
 
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
@@ -136,28 +133,22 @@ public class ConsistencyTest extends DaoTestBase {
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
         for (int j = 0; j < ATTEMPTS; j++) {
-
-            for (int i = 0; i < THREAD_NUM; i++) {
-                PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(j + " " + i + " ", 1L, 2L, 3L, (long) 1);
-                executorService.submit(new ExecutePlan(
-                        atomicInteger,
-                        serviceHandler,
-                        postingPlanChange,
-                        retryTemplate)
-                );
-            }
-            //todo можно и без этого
-            executorService.submit(() ->
-                    retryTemplate.execute(c ->
-                            serviceHandler.getBalanceByID(1L, Clock.latest(new LatestClock()))));
+            PostingPlanChange postingPlanChange = PostingGenerator.createPostingPlanChange(j, 1L, 2L, 3L, (long) 1);
+            executorService.submit(new ExecutePlan(
+                    atomicInteger,
+                    serviceHandler,
+                    postingPlanChange,
+                    retryTemplate)
+            );
         }
+
 
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.HOURS);
 
         Balance finalBalance = retryTemplate.execute(c -> serviceHandler.getBalanceByID(1L, Clock.latest(new LatestClock())));
-        Assert.assertEquals(-ATTEMPTS * THREAD_NUM, finalBalance.min_available_amount);
-        Assert.assertEquals(ATTEMPTS * THREAD_NUM, finalBalance.max_available_amount);
+        Assert.assertEquals(-ATTEMPTS, finalBalance.min_available_amount);
+        Assert.assertEquals(ATTEMPTS , finalBalance.max_available_amount);
         Assert.assertEquals(0, finalBalance.own_amount);
 
     }
