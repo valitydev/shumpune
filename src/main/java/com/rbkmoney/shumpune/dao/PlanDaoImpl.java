@@ -149,6 +149,7 @@ public class PlanDaoImpl extends NamedParameterJdbcDaoSupport implements PlanDao
 
     @Override
     public long getMaxClockByAccountId(Long id) {
+
         MapSqlParameterSource params = new MapSqlParameterSource("accId", id);
 
         String sqlGetClock = "select max(id) as clock " +

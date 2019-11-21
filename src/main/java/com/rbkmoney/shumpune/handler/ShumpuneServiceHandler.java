@@ -13,7 +13,10 @@ import com.rbkmoney.woody.api.flow.error.WUnavailableResultException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
+import org.springframework.dao.CannotSerializeTransactionException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.CannotCreateTransactionException;
+import org.springframework.transaction.TransactionSystemException;
 
 import java.util.List;
 import java.util.Map;
@@ -35,10 +38,9 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
         log.info("Start hold postingPlanChange: {}", postingPlanChange);
         try {
             return postingPlanService.hold(postingPlanChange);
-        } catch (DaoException e) {
-            //todo uncomment
-//            log.error("Failed to hold e: ", e);
-            throw new WUnavailableResultException(e);
+        } catch (CannotSerializeTransactionException | TransactionSystemException | CannotCreateTransactionException ex) {
+            log.error("Some SQL exception in hold:", ex);
+            throw new WUnavailableResultException(ex);
         } catch (Exception e) {
             log.error("Failed to hold e: ", e);
             throw new TException(e);
@@ -120,8 +122,11 @@ public class ShumpuneServiceHandler implements AccounterSrv.Iface {
             BalanceModel balance = postingPlanService.getBalanceById(accountId, clock);
             log.info("Finish getBalanceByID balance: {}", balance);
             return balanceModelToBalanceConverter.convert(balance);
+        } catch (CannotSerializeTransactionException | TransactionSystemException | CannotCreateTransactionException | DaoException ex) {
+            log.error("Some SQL exception in getBalance:", ex);
+            throw new WUnavailableResultException(ex);
         } catch (Exception e) {
-//            log.error("Failed to getBalanceByID e: ", e);
+            log.error("Failed to getBalanceByID e: ", e);
             throw new TException(e);
         }
     }

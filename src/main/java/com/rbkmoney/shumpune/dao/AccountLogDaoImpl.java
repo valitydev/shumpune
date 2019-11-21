@@ -58,17 +58,12 @@ public class AccountLogDaoImpl extends NamedParameterJdbcDaoSupport implements A
     public BalanceModel getLastBalanceById(Long id) {
         MapSqlParameterSource params = new MapSqlParameterSource("accId", id);
         final String sql =
-                "with max_clock_account as " +
-                        "(select account_id, max(clock) maxClock" +
-                        "    from shm.account_log" +
-                        "    group by account_id" +
-                        "    having account_id = :accId) " +
-                        "select shm.account_log.id, shm.account_log.account_id, shm.account_log.own_amount, shm.account_log.max_available_amount, " +
-                        " shm.account_log.min_available_amount, shm.account_log.clock " +
-                        "from   max_clock_account " +
-                        "inner join shm.account_log " +
-                        "on         shm.account_log.account_id = max_clock_account.account_id " +
-                        "and        shm.account_log.clock = max_clock_account.maxClock";
+            "select shm.account_log.id, shm.account_log.account_id, shm.account_log.own_amount, shm.account_log.max_available_amount, " +
+            " shm.account_log.min_available_amount, shm.account_log.clock " +
+            "from shm.account_log " +
+            "where shm.account_log.account_id = :accId " +
+            "order by shm.account_log.clock desc " +
+            "limit 1;";
         try {
             List<BalanceModel> query = getNamedParameterJdbcTemplate()
                     .query(sql, params, balanceRowMapper);

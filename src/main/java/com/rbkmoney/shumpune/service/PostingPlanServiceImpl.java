@@ -20,6 +20,7 @@ import com.rbkmoney.shumpune.validator.PostingsUpdateValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,7 @@ public class PostingPlanServiceImpl implements PostingPlanService {
     private final PostingBatchValidator postingBatchValidator;
     private final PostingsUpdateValidator postingsUpdateValidator;
     private final PostingPlanToListPostingModelListConverter postingPlanToListPostingModelListConverter;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
@@ -105,15 +107,6 @@ public class PostingPlanServiceImpl implements PostingPlanService {
         return balance;
 
     }
-
-    private long initMaxClockForAccount(Long id, Clock clock, long clockValue) {
-        long maxClockByAccountId = clockValue;
-        if (clock.isSetVector()) {
-            maxClockByAccountId = planDao.getMaxClockByAccountId(id);
-        }
-        return maxClockByAccountId;
-    }
-
 
     private long getClockValue(Long id, Clock clock) {
         long clockValue;
